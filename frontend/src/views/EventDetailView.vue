@@ -169,15 +169,21 @@
 
         <div v-else class="space-y-4">
           <div
-            v-for="version in eventsStore.eventHistory"
+            v-for="(version, index) in eventsStore.eventHistory"
             :key="version._id"
             class="p-4 bg-gray-50 rounded"
           >
             <div class="flex justify-between items-start mb-2">
-              <div>
+              <div class="flex items-center gap-2">
                 <span class="font-semibold">Version {{ version.version }}</span>
-                <span class="text-sm text-gray-600 ml-3">
+                <span class="text-sm text-gray-600">
                   by {{ version.changedBy }} on {{ formatTimestamp(version.changedAt) }}
+                </span>
+                <span
+                  v-if="getVersionChanges(version, index).length > 0"
+                  class="px-2 py-0.5 text-xs bg-blue-500 text-white rounded"
+                >
+                  {{ getVersionChanges(version, index).length }} change{{ getVersionChanges(version, index).length > 1 ? 's' : '' }}
                 </span>
               </div>
               <button
@@ -188,9 +194,45 @@
                 Revert
               </button>
             </div>
-            <p v-if="version.changeDescription" class="text-sm text-gray-600">
+            <p v-if="version.changeDescription" class="text-sm text-gray-600 mb-2">
               {{ version.changeDescription }}
             </p>
+
+            <!-- Changes Diff -->
+            <div v-if="getVersionChanges(version, index).length > 0" class="mt-3">
+              <button
+                @click="toggleChangesExpanded(version.version)"
+                class="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                <span>{{ expandedVersions[version.version] ? '▼' : '▶' }}</span>
+                <span>{{ expandedVersions[version.version] ? 'Hide' : 'View' }} Changes</span>
+              </button>
+
+              <div v-if="expandedVersions[version.version]" class="mt-2 space-y-2 text-sm">
+                <div
+                  v-for="(change, changeIndex) in getVersionChanges(version, index)"
+                  :key="changeIndex"
+                  class="p-2 rounded border-l-4"
+                  :class="{
+                    'bg-green-50 border-green-500': change.type === 'added',
+                    'bg-red-50 border-red-500': change.type === 'removed',
+                    'bg-yellow-50 border-yellow-500': change.type === 'modified'
+                  }"
+                >
+                  <div class="font-semibold text-gray-700">{{ change.field }}</div>
+                  <div v-if="change.type === 'modified'" class="mt-1">
+                    <div class="text-red-700">- {{ change.oldValue }}</div>
+                    <div class="text-green-700">+ {{ change.newValue }}</div>
+                  </div>
+                  <div v-else-if="change.type === 'added'" class="mt-1 text-green-700">
+                    + {{ change.newValue }}
+                  </div>
+                  <div v-else-if="change.type === 'removed'" class="mt-1 text-red-700">
+                    - {{ change.oldValue }}
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -224,6 +266,7 @@ const eventId = ref(route.params.id)
 const showHistory = ref(false)
 const charactersAlive = ref([])
 const childEvents = ref([])
+const expandedVersions = ref({})
 
 function getEventTypeColor(type) {
   const colors = {
@@ -328,6 +371,140 @@ function formatDate(event) {
 
 function formatTimestamp(timestamp) {
   return new Date(timestamp).toLocaleString()
+}
+
+function toggleChangesExpanded(version) {
+  expandedVersions.value[version] = !expandedVersions.value[version]
+}
+
+function formatDateForDiff(event) {
+  if (event.dateType === 'Exact' && event.exactDate) {
+    const { year, month, day } = event.exactDate
+    if (day && month) return `Exact: ${month}/${day}/${year}`
+    if (month) return `Exact: ${month}/${year}`
+    return `Exact: Year ${year}`
+  }
+  if (event.dateType === 'Approximation' && event.exactDate) {
+    return `~Year ${event.exactDate.year}`
+  }
+  if (event.dateType === 'Relative') {
+    const parts = []
+    if (event.relativeOffset === null) {
+      parts.push(`~${event.relativeTimeUnit}`)
+    } else {
+      parts.push(`${Math.abs(event.relativeOffset)} ${event.relativeTimeUnit}`)
+    }
+    const direction = event.relativeDirection
+      ? event.relativeDirection.toLowerCase()
+      : (event.relativeOffset < 0 ? 'before' : 'after')
+    parts.push(direction)
+    parts.push('reference event')
+    return `Relative: ${parts.join(' ')}`
+  }
+  return 'Unknown'
+}
+
+function formatSourcesForDiff(sources) {
+  if (!sources || sources.length === 0) return 'None'
+  return sources.map(s => {
+    const parts = [s.sourceType]
+    if (s.chapter) parts.push(`Ch.${s.chapter}`)
+    if (s.page) parts.push(`Pg.${s.page}`)
+    if (s.isPrimary) parts.push('(Primary)')
+    return parts.join(' ')
+  }).join(', ')
+}
+
+function getVersionChanges(version, index) {
+  // First version has no previous version to compare
+  if (index === eventsStore.eventHistory.length - 1) {
+    return []
+  }
+
+  const previousVersion = eventsStore.eventHistory[index + 1]
+  const changes = []
+  const current = version.event
+  const previous = previousVersion.event
+
+  // Compare name
+  if (current.name !== previous.name) {
+    changes.push({
+      field: 'Name',
+      type: 'modified',
+      oldValue: previous.name,
+      newValue: current.name
+    })
+  }
+
+  // Compare type
+  if (current.type !== previous.type) {
+    changes.push({
+      field: 'Type',
+      type: 'modified',
+      oldValue: previous.type,
+      newValue: current.type
+    })
+  }
+
+  // Compare description
+  if (current.description !== previous.description) {
+    changes.push({
+      field: 'Description',
+      type: 'modified',
+      oldValue: previous.description.length > 100 ? previous.description.substring(0, 100) + '...' : previous.description,
+      newValue: current.description.length > 100 ? current.description.substring(0, 100) + '...' : current.description
+    })
+  }
+
+  // Compare dates
+  const currentDate = formatDateForDiff(current)
+  const previousDate = formatDateForDiff(previous)
+  if (currentDate !== previousDate) {
+    changes.push({
+      field: 'Date',
+      type: 'modified',
+      oldValue: previousDate,
+      newValue: currentDate
+    })
+  }
+
+  // Compare involved characters
+  const currentChars = current.involvedCharacters.sort().join(', ')
+  const previousChars = previous.involvedCharacters.sort().join(', ')
+  if (currentChars !== previousChars) {
+    // Check for additions
+    const added = current.involvedCharacters.filter(c => !previous.involvedCharacters.includes(c))
+    const removed = previous.involvedCharacters.filter(c => !current.involvedCharacters.includes(c))
+
+    if (added.length > 0) {
+      changes.push({
+        field: 'Characters Added',
+        type: 'added',
+        newValue: added.join(', ')
+      })
+    }
+    if (removed.length > 0) {
+      changes.push({
+        field: 'Characters Removed',
+        type: 'removed',
+        oldValue: removed.join(', ')
+      })
+    }
+  }
+
+  // Compare sources
+  const currentSources = formatSourcesForDiff(current.sources)
+  const previousSources = formatSourcesForDiff(previous.sources)
+  if (currentSources !== previousSources) {
+    changes.push({
+      field: 'Sources',
+      type: 'modified',
+      oldValue: previousSources,
+      newValue: currentSources
+    })
+  }
+
+  return changes
 }
 
 async function revertToVersion(version) {
