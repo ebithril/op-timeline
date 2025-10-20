@@ -308,6 +308,56 @@
         </div>
       </div>
 
+      <!-- Location -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold mb-2">Location (optional)</label>
+        <p class="text-xs text-gray-600 mb-2">Select where this event took place</p>
+        <div class="relative mb-4">
+          <input
+            v-model="locationSearch"
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+            placeholder="Start typing location name..."
+            @input="filterLocations"
+            @focus="showLocationSuggestions = true"
+            @blur="() => setTimeout(() => showLocationSuggestions = false, 200)"
+          />
+
+          <!-- Location Suggestions Dropdown -->
+          <div
+            v-if="showLocationSuggestions && filteredLocationSuggestions.length > 0"
+            class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
+          >
+            <button
+              v-for="loc in filteredLocationSuggestions"
+              :key="loc._id"
+              type="button"
+              @mousedown.prevent="selectLocation(loc)"
+              class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+            >
+              <div class="font-semibold">{{ loc.name }}</div>
+              <div class="text-xs text-gray-500">{{ formatLocationType(loc.type) }}</div>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="selectedLocation" class="mb-4 p-3 bg-green-50 rounded border border-green-200">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-semibold">{{ selectedLocation.name }}</div>
+              <div class="text-sm text-gray-600">{{ formatLocationType(selectedLocation.type) }}</div>
+            </div>
+            <button
+              type="button"
+              @click="clearLocation"
+              class="text-red-500 hover:text-red-700 font-bold"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- Involved Characters -->
       <div class="mb-6">
         <label class="block text-sm font-semibold mb-2">Involved Characters</label>
@@ -490,12 +540,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useEventsStore } from '../stores/events'
 import { useCharactersStore } from '../stores/characters'
 import { useArcsStore } from '../stores/arcs'
+import { useLocationsStore } from '../stores/locations'
 
 const route = useRoute()
 const router = useRouter()
 const eventsStore = useEventsStore()
 const charactersStore = useCharactersStore()
 const arcsStore = useArcsStore()
+const locationsStore = useLocationsStore()
 
 const isNewEvent = computed(() => route.name === 'event-new')
 const eventId = ref(route.params.id)
@@ -562,6 +614,7 @@ const eventData = ref({
   relativeDirection: null,
   arcId: null,
   parentEventId: null,
+  locationId: null,
   involvedCharacters: [],
   sources: [{ sourceType: 'Chapter', notes: '', isPrimary: true, chapter: null, page: null, url: '' }],
 })
@@ -723,6 +776,48 @@ function clearParentEvent() {
   parentEventSearch.value = ''
 }
 
+// Location autocomplete
+const locationSearch = ref('')
+const showLocationSuggestions = ref(false)
+const filteredLocationSuggestions = ref([])
+const selectedLocation = ref(null)
+
+function formatLocationType(type) {
+  const typeMap = {
+    'Sea': 'Sea',
+    'Island': 'Island',
+    'Kingdom': 'Kingdom',
+    'CityTownVillage': 'City/Town/Village'
+  }
+  return typeMap[type] || type
+}
+
+function filterLocations() {
+  if (!locationSearch.value.trim()) {
+    filteredLocationSuggestions.value = []
+    return
+  }
+
+  const search = locationSearch.value.toLowerCase()
+  filteredLocationSuggestions.value = locationsStore.sortedLocations
+    .filter(loc => loc.name.toLowerCase().includes(search))
+    .slice(0, 10)
+}
+
+function selectLocation(location) {
+  selectedLocation.value = location
+  eventData.value.locationId = location._id
+  locationSearch.value = location.name
+  showLocationSuggestions.value = false
+  filteredLocationSuggestions.value = []
+}
+
+function clearLocation() {
+  selectedLocation.value = null
+  eventData.value.locationId = null
+  locationSearch.value = ''
+}
+
 function addSource() {
   eventData.value.sources.push({ sourceType: 'Chapter', notes: '', isPrimary: false, chapter: null, page: null, url: '' })
 }
@@ -766,11 +861,12 @@ async function saveEvent() {
 }
 
 onMounted(async () => {
-  // Load all characters, events, and arcs for autocomplete
+  // Load all characters, events, arcs, and locations for autocomplete
   await Promise.all([
     charactersStore.fetchAll(),
     eventsStore.fetchAll(),
-    arcsStore.fetchAll()
+    arcsStore.fetchAll(),
+    locationsStore.fetchAll()
   ])
 
   if (!isNewEvent.value && eventId.value) {
@@ -826,6 +922,15 @@ onMounted(async () => {
         if (parentEvent) {
           selectedParentEvent.value = parentEvent
           parentEventSearch.value = parentEvent.name
+        }
+      }
+
+      // Load selected location if exists
+      if (eventData.value.locationId) {
+        const location = locationsStore.sortedLocations.find(l => l._id === eventData.value.locationId)
+        if (location) {
+          selectedLocation.value = location
+          locationSearch.value = location.name
         }
       }
     }

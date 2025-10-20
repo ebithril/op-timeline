@@ -4,6 +4,9 @@ import EventDetailView from '../views/EventDetailView.vue'
 import EventEditView from '../views/EventEditView.vue'
 import CharactersView from '../views/CharactersView.vue'
 import CharacterEditView from '../views/CharacterEditView.vue'
+import LocationsView from '../views/LocationsView.vue'
+import LocationEditView from '../views/LocationEditView.vue'
+import LocationDetailView from '../views/LocationDetailView.vue'
 import SagasView from '../views/SagasView.vue'
 import SagaEditView from '../views/SagaEditView.vue'
 import ArcsView from '../views/ArcsView.vue'
@@ -51,6 +54,26 @@ const router = createRouter({
       path: '/characters/new',
       name: 'character-new',
       component: CharacterEditView,
+    },
+    {
+      path: '/locations',
+      name: 'locations',
+      component: LocationsView,
+    },
+    {
+      path: '/locations/:id',
+      name: 'location-detail',
+      component: LocationDetailView,
+    },
+    {
+      path: '/locations/:id/edit',
+      name: 'location-edit',
+      component: LocationEditView,
+    },
+    {
+      path: '/locations/new',
+      name: 'location-new',
+      component: LocationEditView,
     },
     {
       path: '/sagas',

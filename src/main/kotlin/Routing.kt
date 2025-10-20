@@ -3,6 +3,7 @@ package com
 import com.routes.arcRoutes
 import com.routes.characterRoutes
 import com.routes.eventRoutes
+import com.routes.locationRoutes
 import com.routes.sagaRoutes
 import com.routes.userRoutes
 import io.ktor.server.application.*
@@ -16,6 +17,7 @@ fun Application.configureRouting() {
 	// API routes
 	eventRoutes()
 	characterRoutes()
+	locationRoutes()
 	arcRoutes()
 	sagaRoutes()
 	userRoutes()

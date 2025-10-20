@@ -16,6 +16,13 @@
             </router-link>
 
             <router-link
+              to="/locations"
+              class="text-white hover:text-gray-200"
+            >
+              Locations
+            </router-link>
+
+            <router-link
               to="/sagas"
               class="text-white hover:text-gray-200"
             >

@@ -38,6 +38,8 @@ data class Event(
 	val arcId: ObjectId? = null,
 	@Contextual
 	val parentEventId: ObjectId? = null,  // Reference to parent event for hierarchical events
+	@Contextual
+	val locationId: ObjectId? = null,  // Reference to location where event occurred
 	val dateType: DateType,
 
 	// For Exact dates

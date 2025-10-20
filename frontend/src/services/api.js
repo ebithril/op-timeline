@@ -65,6 +65,18 @@ export const sagasAPI = {
   delete: (id) => apiClient.delete(`/api/sagas/${id}`),
 }
 
+// Locations API
+export const locationsAPI = {
+  getAll: () => apiClient.get('/api/locations'),
+  getById: (id) => apiClient.get(`/api/locations/${id}`),
+  getHierarchy: (id) => apiClient.get(`/api/locations/${id}/hierarchy`),
+  getChildren: (id) => apiClient.get(`/api/locations/${id}/children`),
+  getEvents: (id) => apiClient.get(`/api/locations/${id}/events`),
+  create: (location) => apiClient.post('/api/locations', location),
+  update: (id, location) => apiClient.put(`/api/locations/${id}`, location),
+  delete: (id) => apiClient.delete(`/api/locations/${id}`),
+}
+
 // Users API
 export const usersAPI = {
   getMe: () => apiClient.get('/api/users/me'),
