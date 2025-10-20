@@ -59,7 +59,13 @@
           <span class="font-semibold">Aliases:</span> {{ character.aliases.join(', ') }}
         </div>
 
-        <div class="flex gap-2 mt-3">
+        <div class="flex flex-wrap gap-2 mt-3">
+          <button
+            @click="toggleTimeline(character._id)"
+            class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+          >
+            {{ showingTimeline[character._id] ? 'Hide' : 'View' }} Timeline
+          </button>
           <router-link
             v-if="authStore.isEditor"
             :to="`/characters/${character._id}/edit`"
@@ -75,6 +81,28 @@
             Delete
           </button>
         </div>
+
+        <!-- Timeline -->
+        <div v-if="showingTimeline[character._id]" class="mt-4 pt-4 border-t border-gray-200">
+          <h4 class="text-sm font-semibold mb-2">Timeline ({{ characterTimelines[character._id]?.length || 0 }} events)</h4>
+          <div v-if="loadingTimelines[character._id]" class="text-center py-2 text-gray-600 text-sm">
+            Loading...
+          </div>
+          <div v-else-if="characterTimelines[character._id]?.length > 0" class="space-y-1">
+            <router-link
+              v-for="event in characterTimelines[character._id]"
+              :key="event._id"
+              :to="`/event/${event._id}`"
+              class="block p-2 bg-gray-50 hover:bg-gray-100 rounded text-sm transition"
+            >
+              <div class="font-semibold text-xs">{{ event.name }}</div>
+              <div class="text-xs text-gray-600">{{ event.type }} - {{ formatEventDate(event) }}</div>
+            </router-link>
+          </div>
+          <div v-else class="text-center py-2 text-gray-600 text-sm">
+            No events yet
+          </div>
+        </div>
       </div>
     </div>
 
@@ -86,14 +114,18 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, reactive } from 'vue'
 import { useCharactersStore } from '../stores/characters'
 import { useAuthStore } from '../stores/auth'
+import { charactersAPI } from '../services/api'
 
 const charactersStore = useCharactersStore()
 const authStore = useAuthStore()
 
 const searchQuery = ref('')
+const showingTimeline = reactive({})
+const loadingTimelines = reactive({})
+const characterTimelines = reactive({})
 
 const filteredCharacters = computed(() => {
   if (!searchQuery.value.trim()) {
@@ -106,6 +138,33 @@ const filteredCharacters = computed(() => {
     (char.aliases && char.aliases.some(alias => alias.toLowerCase().includes(search)))
   )
 })
+
+function formatEventDate(event) {
+  if (event.displayYear) {
+    return `Year ${event.displayYear}`
+  }
+  if (event.exactDate) {
+    return `Year ${event.exactDate.year || event.exactDate}`
+  }
+  return 'Unknown date'
+}
+
+async function toggleTimeline(characterId) {
+  showingTimeline[characterId] = !showingTimeline[characterId]
+
+  if (showingTimeline[characterId] && !characterTimelines[characterId]) {
+    loadingTimelines[characterId] = true
+    try {
+      const response = await charactersAPI.getTimeline(characterId)
+      characterTimelines[characterId] = response.data
+    } catch (error) {
+      console.error('Failed to load character timeline:', error)
+      characterTimelines[characterId] = []
+    } finally {
+      loadingTimelines[characterId] = false
+    }
+  }
+}
 
 async function deleteCharacter(id) {
   if (confirm('Are you sure you want to delete this character?')) {

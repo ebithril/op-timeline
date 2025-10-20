@@ -201,17 +201,25 @@ function formatDate(event) {
 
   // For relative dates, calculate and show the actual date
   if (event.dateType === 'Relative') {
+    // Check if this is a vague relative date (has time unit but no offset)
+    const isVague = event.relativeOffset === null && event.relativeTimeUnit
+    const direction = isVague && event.relativeDirection
+      ? event.relativeDirection.toLowerCase()
+      : event.relativeOffset < 0 ? 'before' : 'after'
+
     // The backend should provide calculatedAbsoluteDate or we can try to calculate from the reference
     // For now, if we have exactDate calculated by backend, use it
     if (event.calculatedExactDate && typeof event.calculatedExactDate === 'object') {
       const dateStr = formatDateObj(event.calculatedExactDate)
 
       // Add relative context
-      if (event.relativeOffset && event.relativeTimeUnit) {
-        const offset = Math.abs(event.relativeOffset)
-        const direction = event.relativeOffset < 0 ? 'before' : 'after'
+      if (isVague) {
         const unit = event.relativeTimeUnit.toLowerCase()
-        return `${dateStr} (${offset} ${unit} ${direction} reference event)`
+        return `~${dateStr} (~${unit} ${direction})`
+      } else if (event.relativeOffset && event.relativeTimeUnit) {
+        const offset = Math.abs(event.relativeOffset)
+        const unit = event.relativeTimeUnit.toLowerCase()
+        return `${dateStr} (${offset} ${unit} ${direction})`
       }
 
       return dateStr
@@ -221,22 +229,26 @@ function formatDate(event) {
     if (event.displayYear) {
       let baseStr = `Year ${event.displayYear}`
 
-      if (event.relativeOffset && event.relativeTimeUnit) {
-        const offset = Math.abs(event.relativeOffset)
-        const direction = event.relativeOffset < 0 ? 'before' : 'after'
+      if (isVague) {
         const unit = event.relativeTimeUnit.toLowerCase()
-        baseStr += ` (${offset} ${unit} ${direction} reference event)`
+        baseStr = `~${baseStr} (~${unit} ${direction})`
+      } else if (event.relativeOffset && event.relativeTimeUnit) {
+        const offset = Math.abs(event.relativeOffset)
+        const unit = event.relativeTimeUnit.toLowerCase()
+        baseStr += ` (${offset} ${unit} ${direction})`
       }
 
       return baseStr
     }
 
     // If no calculated date but we have relative info, show that
-    if (event.relativeOffset && event.relativeTimeUnit) {
-      const offset = Math.abs(event.relativeOffset)
-      const direction = event.relativeOffset < 0 ? 'before' : 'after'
+    if (isVague) {
       const unit = event.relativeTimeUnit.toLowerCase()
-      return `${offset} ${unit} ${direction} another event`
+      return `~${unit} ${direction}`
+    } else if (event.relativeOffset && event.relativeTimeUnit) {
+      const offset = Math.abs(event.relativeOffset)
+      const unit = event.relativeTimeUnit.toLowerCase()
+      return `${offset} ${unit} ${direction}`
     }
 
     return 'Relative date'

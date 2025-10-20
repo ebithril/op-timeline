@@ -62,6 +62,39 @@ fun Route.characterRoutes() {
 			}
 		}
 
+		// Get timeline (all events) for a character (public)
+		get("/{id}/timeline") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing character ID"))
+				return@get
+			}
+
+			try {
+				// Get the character to find their name
+				val character = characterRepository.findById(id)
+				if (character == null) {
+					call.respond(HttpStatusCode.NotFound, mapOf("error" to "Character not found"))
+					return@get
+				}
+
+				// Find all events involving this character (by name)
+				val events = eventRepository.findByCharacter(character.name)
+
+				// Sort by calculated date
+				val sortedEvents = events.sortedWith(
+					compareBy(
+						{ it.calculatedAbsoluteDate },
+						{ it.displayYear },
+						{ it.createdAt }
+					)
+				)
+
+				call.respond(HttpStatusCode.OK, sortedEvents)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch character timeline: ${e.message}"))
+			}
+		}
+
 		// Get characters alive at date (public)
 		get("/alive-at/{date}") {
 			val dateString = call.parameters["date"] ?: run {
@@ -110,9 +143,9 @@ fun Route.characterRoutes() {
 					mapOf(
 						"_id" to character._id?.toHexString(),
 						"name" to character.name,
-						"age" to age,
-						"birthDate" to character.birthDate,
-						"displayBirthYear" to character.displayBirthYear
+						"age" to age?.toString(),
+						"birthDate" to character.birthDate?.toString(),
+						"displayBirthYear" to character.displayBirthYear?.toString()
 					)
 				}
 

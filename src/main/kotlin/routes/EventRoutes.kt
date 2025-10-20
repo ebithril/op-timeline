@@ -60,6 +60,36 @@ fun Route.eventRoutes() {
 			}
 		}
 
+		// Get child events of a parent event (public)
+		get("/{id}/children") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
+				return@get
+			}
+
+			try {
+				val children = eventRepository.findByParentId(id)
+				call.respond(HttpStatusCode.OK, children)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch child events: ${e.message}"))
+			}
+		}
+
+		// Get timeline (child events) for a parent event (public)
+		get("/{id}/timeline") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
+				return@get
+			}
+
+			try {
+				val children = eventRepository.findByParentId(id)
+				call.respond(HttpStatusCode.OK, children)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch timeline: ${e.message}"))
+			}
+		}
+
 		// Create new event (requires editor or admin)
 		post {
 			val user = call.requireEditor(authMiddleware) ?: return@post

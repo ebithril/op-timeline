@@ -165,6 +165,16 @@ export const useEventsStore = defineStore('events', () => {
     }
   }
 
+  async function fetchChildren(id) {
+    try {
+      const response = await eventsAPI.getChildren(id)
+      return response.data
+    } catch (err) {
+      error.value = err.response?.data?.error || 'Failed to fetch child events'
+      return []
+    }
+  }
+
   return {
     events,
     currentEvent,
@@ -175,6 +185,7 @@ export const useEventsStore = defineStore('events', () => {
     fetchAll,
     fetchById,
     fetchByCharacter,
+    fetchChildren,
     create,
     update,
     deleteEvent,

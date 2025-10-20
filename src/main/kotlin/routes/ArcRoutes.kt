@@ -5,6 +5,7 @@ import com.middleware.requireAdmin
 import com.middleware.requireEditor
 import com.model.Arc
 import com.repository.ArcRepository
+import com.repository.EventRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -13,6 +14,7 @@ import io.ktor.server.routing.*
 
 fun Route.arcRoutes() {
 	val arcRepository = ArcRepository()
+	val eventRepository = EventRepository()
 	val authMiddleware = AuthMiddleware()
 
 	route("/api/arcs") {
@@ -57,6 +59,21 @@ fun Route.arcRoutes() {
 				call.respond(HttpStatusCode.OK, arcs)
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch arcs: ${e.message}"))
+			}
+		}
+
+		// Get timeline (all events) for an arc (public)
+		get("/{id}/timeline") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing arc ID"))
+				return@get
+			}
+
+			try {
+				val events = eventRepository.findByArcId(id)
+				call.respond(HttpStatusCode.OK, events)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch arc timeline: ${e.message}"))
 			}
 		}
 

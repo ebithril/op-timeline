@@ -44,7 +44,59 @@ class EventRepository {
 		).toList()
 	}
 
+	suspend fun findByParentId(parentId: String): List<Event> {
+		val objectId = try {
+			ObjectId(parentId)
+		} catch (e: Exception) {
+			return emptyList()
+		}
+		return eventsCollection.find(
+			Filters.and(
+				Filters.eq("parentEventId", objectId),
+				Filters.eq("isDeleted", false)
+			)
+		).sort(Sorts.ascending("calculatedAbsoluteDate", "displayYear", "createdAt"))
+		.toList()
+	}
+
+	suspend fun findByArcId(arcId: String): List<Event> {
+		val objectId = try {
+			ObjectId(arcId)
+		} catch (e: Exception) {
+			return emptyList()
+		}
+		return eventsCollection.find(
+			Filters.and(
+				Filters.eq("arcId", objectId),
+				Filters.eq("isDeleted", false)
+			)
+		).sort(Sorts.ascending("calculatedAbsoluteDate", "displayYear", "createdAt"))
+		.toList()
+	}
+
+	suspend fun findByRelativeEventId(relativeEventId: String): List<Event> {
+		val objectId = try {
+			ObjectId(relativeEventId)
+		} catch (e: Exception) {
+			return emptyList()
+		}
+		return eventsCollection.find(
+			Filters.and(
+				Filters.eq("relativeEventId", objectId),
+				Filters.eq("isDeleted", false)
+			)
+		).toList()
+	}
+
 	suspend fun create(event: Event, username: String): Event {
+		// If has parent, inherit arcId from parent if not explicitly set
+		val effectiveArcId = if (event.parentEventId != null && event.arcId == null) {
+			val parent = findById(event.parentEventId.toHexString())
+			parent?.arcId
+		} else {
+			event.arcId
+		}
+
 		// Calculate absolute date and exact date before creating
 		val absoluteDate = DateCalculator.calculateAbsoluteDate(event, this)
 		val calculatedExactDate = DateCalculator.calculateExactDate(event, this)
@@ -52,6 +104,7 @@ class EventRepository {
 
 		val newEvent = event.copy(
 			_id = ObjectId(),
+			arcId = effectiveArcId,
 			createdAt = System.currentTimeMillis(),
 			createdBy = username,
 			updatedAt = System.currentTimeMillis(),
@@ -79,6 +132,14 @@ class EventRepository {
 	suspend fun update(id: String, event: Event, username: String): Event? {
 		val existingEvent = findById(id) ?: return null
 
+		// If has parent, inherit arcId from parent if not explicitly set
+		val effectiveArcId = if (event.parentEventId != null && event.arcId == null) {
+			val parent = findById(event.parentEventId.toHexString())
+			parent?.arcId
+		} else {
+			event.arcId
+		}
+
 		// Calculate absolute date and exact date before updating
 		val absoluteDate = DateCalculator.calculateAbsoluteDate(event, this)
 		val calculatedExactDate = DateCalculator.calculateExactDate(event, this)
@@ -86,6 +147,7 @@ class EventRepository {
 
 		val updatedEvent = event.copy(
 			_id = existingEvent._id,
+			arcId = effectiveArcId,
 			createdAt = existingEvent.createdAt,
 			createdBy = existingEvent.createdBy,
 			updatedAt = System.currentTimeMillis(),
@@ -110,7 +172,41 @@ class EventRepository {
 		)
 		versionsCollection.insertOne(version)
 
+		// Recalculate all events that reference this event (cascade update)
+		recalculateDependentEvents(id, username)
+
 		return updatedEvent
+	}
+
+	/**
+	 * Recursively recalculate dates for all events that depend on the given event
+	 */
+	private suspend fun recalculateDependentEvents(eventId: String, username: String) {
+		// Find all events that reference this event
+		val dependentEvents = findByRelativeEventId(eventId)
+
+		for (dependent in dependentEvents) {
+			// Recalculate dates for this dependent event
+			val absoluteDate = DateCalculator.calculateAbsoluteDate(dependent, this)
+			val calculatedExactDate = DateCalculator.calculateExactDate(dependent, this)
+			val displayYear = dependent.exactDate?.year ?: calculatedExactDate?.year ?: absoluteDate?.let { (it / 365.0).toInt() }
+
+			val updatedDependent = dependent.copy(
+				calculatedAbsoluteDate = absoluteDate,
+				calculatedExactDate = calculatedExactDate,
+				displayYear = displayYear,
+				updatedAt = System.currentTimeMillis(),
+				updatedBy = username
+			)
+
+			eventsCollection.replaceOne(
+				Filters.eq("_id", dependent._id),
+				updatedDependent
+			)
+
+			// Recursively update events that depend on this event
+			recalculateDependentEvents(dependent._id!!.toHexString(), username)
+		}
 	}
 
 	suspend fun delete(id: String, username: String): Boolean {

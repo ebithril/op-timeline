@@ -4,6 +4,8 @@ import com.middleware.AuthMiddleware
 import com.middleware.requireAdmin
 import com.middleware.requireEditor
 import com.model.Saga
+import com.repository.ArcRepository
+import com.repository.EventRepository
 import com.repository.SagaRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,6 +15,8 @@ import io.ktor.server.routing.*
 
 fun Route.sagaRoutes() {
 	val sagaRepository = SagaRepository()
+	val arcRepository = ArcRepository()
+	val eventRepository = EventRepository()
 	val authMiddleware = AuthMiddleware()
 
 	route("/api/sagas") {
@@ -42,6 +46,37 @@ fun Route.sagaRoutes() {
 				}
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch saga: ${e.message}"))
+			}
+		}
+
+		// Get timeline (all events in all arcs) for a saga (public)
+		get("/{id}/timeline") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing saga ID"))
+				return@get
+			}
+
+			try {
+				// Get all arcs in this saga
+				val arcs = arcRepository.findBySagaId(id)
+
+				// Get all events for each arc and flatten into single list
+				val allEvents = arcs.flatMap { arc ->
+					eventRepository.findByArcId(arc._id!!.toHexString())
+				}
+
+				// Sort by calculated date
+				val sortedEvents = allEvents.sortedWith(
+					compareBy(
+						{ it.calculatedAbsoluteDate },
+						{ it.displayYear },
+						{ it.createdAt }
+					)
+				)
+
+				call.respond(HttpStatusCode.OK, sortedEvents)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch saga timeline: ${e.message}"))
 			}
 		}
 

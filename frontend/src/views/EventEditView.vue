@@ -146,16 +146,43 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-semibold mb-2">Offset Amount *</label>
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
             <input
-              v-model.number="eventData.relativeOffset"
+              v-model="isVagueRelative"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Vague offset (e.g., "some days before" without exact count)</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Check this if you know the time unit but not the exact offset</p>
+        </div>
+
+        <div class="grid grid-cols-3 gap-4">
+          <div>
+            <label class="block text-sm font-semibold mb-2">
+              Offset Amount {{ isVagueRelative ? '(optional)' : '*' }}
+            </label>
+            <input
+              v-model.number="vagueOffsetAmount"
               type="number"
+              :required="!isVagueRelative"
+              :disabled="isVagueRelative"
+              min="0"
+              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary disabled:bg-gray-100"
+              :placeholder="isVagueRelative ? 'N/A' : 'e.g., 2'"
+            />
+          </div>
+          <div>
+            <label class="block text-sm font-semibold mb-2">Direction *</label>
+            <select
+              v-model="relativeDirection"
               required
               class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="e.g., 2 (negative for before)"
-            />
+            >
+              <option value="before">Before</option>
+              <option value="after">After</option>
+            </select>
           </div>
           <div>
             <label class="block text-sm font-semibold mb-2">Time Unit *</label>
@@ -173,6 +200,13 @@
             </select>
           </div>
         </div>
+
+        <p v-if="isVagueRelative" class="text-sm text-gray-600 mt-2">
+          This will be displayed as "~{{ eventData.relativeTimeUnit?.toLowerCase() || 'time' }} {{ relativeDirection }} {{ selectedRelativeEvent?.name || 'reference event' }}"
+        </p>
+        <p v-else-if="vagueOffsetAmount && eventData.relativeTimeUnit" class="text-sm text-gray-600 mt-2">
+          This will be displayed as "{{ vagueOffsetAmount }} {{ eventData.relativeTimeUnit?.toLowerCase() || 'time' }} {{ relativeDirection }} {{ selectedRelativeEvent?.name || 'reference event' }}"
+        </p>
       </div>
 
       <!-- Arc -->
@@ -216,6 +250,56 @@
             <button
               type="button"
               @click="clearArc"
+              class="text-red-500 hover:text-red-700 font-bold"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parent Event -->
+      <div class="mb-6">
+        <label class="block text-sm font-semibold mb-2">Parent Event (optional)</label>
+        <p class="text-xs text-gray-600 mb-2">Select a parent event if this is a sub-event (e.g., a fight during a larger battle)</p>
+        <div class="relative mb-4">
+          <input
+            v-model="parentEventSearch"
+            type="text"
+            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+            placeholder="Start typing event name..."
+            @input="filterParentEvents"
+            @focus="showParentEventSuggestions = true"
+            @blur="() => setTimeout(() => showParentEventSuggestions = false, 200)"
+          />
+
+          <!-- Parent Event Suggestions Dropdown -->
+          <div
+            v-if="showParentEventSuggestions && filteredParentEventSuggestions.length > 0"
+            class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
+          >
+            <button
+              v-for="evt in filteredParentEventSuggestions"
+              :key="evt._id"
+              type="button"
+              @mousedown.prevent="selectParentEvent(evt)"
+              class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
+            >
+              <div class="font-semibold">{{ evt.name }}</div>
+              <div class="text-xs text-gray-500">{{ evt.type }} - {{ evt.displayYear ? `Year ${evt.displayYear}` : 'Unknown date' }}</div>
+            </button>
+          </div>
+        </div>
+
+        <div v-if="selectedParentEvent" class="mb-4 p-3 bg-purple-50 rounded border border-purple-200">
+          <div class="flex justify-between items-start">
+            <div>
+              <div class="font-semibold">{{ selectedParentEvent.name }}</div>
+              <div class="text-sm text-gray-600">{{ selectedParentEvent.type }} - {{ selectedParentEvent.displayYear ? `Year ${selectedParentEvent.displayYear}` : 'Unknown date' }}</div>
+            </div>
+            <button
+              type="button"
+              @click="clearParentEvent"
               class="text-red-500 hover:text-red-700 font-bold"
             >
               ×
@@ -423,6 +507,36 @@ const exactDateYear = ref(null)
 const exactDateMonth = ref(null)
 const exactDateDay = ref(null)
 
+// Vague relative date flag
+const isVagueRelative = ref(false)
+
+// Direction and offset amount for relative dates
+const vagueOffsetAmount = ref(null)
+const relativeDirection = ref('after')
+
+// Watch vague relative flag - clear offset when enabled
+watch(isVagueRelative, (newValue) => {
+  if (newValue) {
+    eventData.value.relativeOffset = null
+    vagueOffsetAmount.value = null
+  }
+})
+
+// Watch amount + direction and sync to eventData
+watch([vagueOffsetAmount, relativeDirection], () => {
+  if (isVagueRelative.value) {
+    // For vague dates, set relativeDirection and null offset
+    eventData.value.relativeOffset = null
+    eventData.value.relativeDirection = relativeDirection.value === 'before' ? 'Before' : 'After'
+  } else if (vagueOffsetAmount.value != null) {
+    // For precise dates, convert direction + amount to signed offset and clear relativeDirection
+    eventData.value.relativeOffset = relativeDirection.value === 'before'
+      ? -Math.abs(vagueOffsetAmount.value)
+      : Math.abs(vagueOffsetAmount.value)
+    eventData.value.relativeDirection = null
+  }
+})
+
 // Watch date components and update eventData.exactDate
 watch([exactDateYear, exactDateMonth, exactDateDay], () => {
   if (exactDateYear.value) {
@@ -445,7 +559,9 @@ const eventData = ref({
   relativeEventId: null,
   relativeOffset: null,
   relativeTimeUnit: 'Days',
+  relativeDirection: null,
   arcId: null,
+  parentEventId: null,
   involvedCharacters: [],
   sources: [{ sourceType: 'Chapter', notes: '', isPrimary: true, chapter: null, page: null, url: '' }],
 })
@@ -572,6 +688,41 @@ function clearArc() {
   arcSearch.value = ''
 }
 
+// Parent Event autocomplete
+const parentEventSearch = ref('')
+const showParentEventSuggestions = ref(false)
+const filteredParentEventSuggestions = ref([])
+const selectedParentEvent = ref(null)
+
+function filterParentEvents() {
+  if (!parentEventSearch.value.trim()) {
+    filteredParentEventSuggestions.value = []
+    return
+  }
+
+  const search = parentEventSearch.value.toLowerCase()
+  filteredParentEventSuggestions.value = eventsStore.sortedEvents
+    .filter(evt =>
+      evt._id !== eventId.value && // Don't show current event
+      evt.name.toLowerCase().includes(search)
+    )
+    .slice(0, 10)
+}
+
+function selectParentEvent(event) {
+  selectedParentEvent.value = event
+  eventData.value.parentEventId = event._id
+  parentEventSearch.value = event.name
+  showParentEventSuggestions.value = false
+  filteredParentEventSuggestions.value = []
+}
+
+function clearParentEvent() {
+  selectedParentEvent.value = null
+  eventData.value.parentEventId = null
+  parentEventSearch.value = ''
+}
+
 function addSource() {
   eventData.value.sources.push({ sourceType: 'Chapter', notes: '', isPrimary: false, chapter: null, page: null, url: '' })
 }
@@ -646,6 +797,18 @@ onMounted(async () => {
           selectedRelativeEvent.value = relEvent
           relativeEventSearch.value = relEvent.name
         }
+        // Check if this is a vague relative date (has time unit but no offset)
+        if (eventData.value.relativeTimeUnit && eventData.value.relativeOffset == null) {
+          isVagueRelative.value = true
+          // Load direction from relativeDirection field (if it exists)
+          if (eventData.value.relativeDirection) {
+            relativeDirection.value = eventData.value.relativeDirection.toLowerCase()
+          }
+        } else if (eventData.value.relativeOffset != null) {
+          // Extract direction and amount from offset
+          vagueOffsetAmount.value = Math.abs(eventData.value.relativeOffset)
+          relativeDirection.value = eventData.value.relativeOffset < 0 ? 'before' : 'after'
+        }
       }
 
       // Load selected arc if exists
@@ -654,6 +817,15 @@ onMounted(async () => {
         if (arc) {
           selectedArc.value = arc
           arcSearch.value = arc.name
+        }
+      }
+
+      // Load selected parent event if exists
+      if (eventData.value.parentEventId) {
+        const parentEvent = eventsStore.sortedEvents.find(e => e._id === eventData.value.parentEventId)
+        if (parentEvent) {
+          selectedParentEvent.value = parentEvent
+          parentEventSearch.value = parentEvent.name
         }
       }
     }

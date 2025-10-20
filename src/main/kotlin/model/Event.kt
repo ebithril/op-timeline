@@ -16,6 +16,10 @@ enum class TimeUnit {
 	Minutes, Hours, Days, Weeks, Months, Years
 }
 
+enum class RelativeDirection {
+	Before, After
+}
+
 @Serializable
 data class ExactDate(
 	val year: Int,
@@ -32,6 +36,8 @@ data class Event(
 	val description: String,
 	@Contextual
 	val arcId: ObjectId? = null,
+	@Contextual
+	val parentEventId: ObjectId? = null,  // Reference to parent event for hierarchical events
 	val dateType: DateType,
 
 	// For Exact dates
@@ -40,8 +46,9 @@ data class Event(
 	// For Relative dates (relative to another event)
 	@Contextual
 	val relativeEventId: ObjectId? = null,  // Reference to another event
-	val relativeOffset: Int? = null,         // How many units before/after (negative = before, positive = after)
+	val relativeOffset: Int? = null,         // How many units before/after (negative = before, positive = after). Null = vague offset
 	val relativeTimeUnit: TimeUnit? = null,  // The unit of time (Hours, Days, Weeks, etc.)
+	val relativeDirection: RelativeDirection? = null,  // Direction for vague dates (when offset is null). Defaults to After if not specified
 
 	// For Approximation dates
 	val approximateDescription: String? = null,  // e.g., "During the Summit War Arc"

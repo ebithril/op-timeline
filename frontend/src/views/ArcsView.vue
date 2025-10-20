@@ -27,7 +27,7 @@
         :key="arc._id"
         class="bg-white p-6 rounded-lg shadow hover:shadow-md transition-shadow"
       >
-        <div class="flex justify-between items-start">
+        <div class="flex justify-between items-start mb-3">
           <div class="flex-1">
             <h2 class="text-2xl font-bold text-one-piece-dark mb-2">
               {{ arc.name }}
@@ -49,6 +49,12 @@
             </div>
           </div>
           <div class="flex gap-2">
+            <button
+              @click="toggleTimeline(arc._id)"
+              class="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm"
+            >
+              {{ showingTimeline[arc._id] ? 'Hide' : 'View' }} Timeline
+            </button>
             <router-link
               :to="`/arcs/${arc._id}`"
               class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
@@ -61,6 +67,33 @@
             >
               Delete
             </button>
+          </div>
+        </div>
+
+        <!-- Timeline -->
+        <div v-if="showingTimeline[arc._id]" class="mt-4 pt-4 border-t border-gray-200">
+          <h3 class="text-lg font-semibold mb-3">Arc Timeline ({{ arcTimelines[arc._id]?.length || 0 }} events)</h3>
+          <div v-if="loadingTimelines[arc._id]" class="text-center py-4 text-gray-600">
+            Loading timeline...
+          </div>
+          <div v-else-if="arcTimelines[arc._id]?.length > 0" class="space-y-2">
+            <router-link
+              v-for="event in arcTimelines[arc._id]"
+              :key="event._id"
+              :to="`/event/${event._id}`"
+              class="block p-3 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition"
+            >
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <h4 class="font-semibold">{{ event.name }}</h4>
+                  <p class="text-xs text-gray-600 mt-1">{{ event.type }} - {{ formatEventDate(event) }}</p>
+                </div>
+                <span class="text-blue-500 text-sm">→</span>
+              </div>
+            </router-link>
+          </div>
+          <div v-else class="text-center py-4 text-gray-600">
+            No events in this arc yet
           </div>
         </div>
       </div>
@@ -80,16 +113,49 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { onMounted, ref, reactive } from 'vue'
 import { useArcsStore } from '../stores/arcs'
 import { useSagasStore } from '../stores/sagas'
+import { arcsAPI } from '../services/api'
 
 const arcsStore = useArcsStore()
 const sagasStore = useSagasStore()
 
+const showingTimeline = reactive({})
+const loadingTimelines = reactive({})
+const arcTimelines = reactive({})
+
 function getSagaName(sagaId) {
   const saga = sagasStore.sagas.find(s => s._id === sagaId)
   return saga ? saga.name : 'Unknown Saga'
+}
+
+function formatEventDate(event) {
+  if (event.displayYear) {
+    return `Year ${event.displayYear}`
+  }
+  if (event.exactDate) {
+    return `Year ${event.exactDate.year || event.exactDate}`
+  }
+  return 'Unknown date'
+}
+
+async function toggleTimeline(arcId) {
+  showingTimeline[arcId] = !showingTimeline[arcId]
+
+  // Load timeline if showing and not already loaded
+  if (showingTimeline[arcId] && !arcTimelines[arcId]) {
+    loadingTimelines[arcId] = true
+    try {
+      const response = await arcsAPI.getTimeline(arcId)
+      arcTimelines[arcId] = response.data
+    } catch (error) {
+      console.error('Failed to load arc timeline:', error)
+      arcTimelines[arcId] = []
+    } finally {
+      loadingTimelines[arcId] = false
+    }
+  }
 }
 
 async function confirmDelete(arc) {

@@ -2,6 +2,7 @@ package com.util
 
 import com.model.Event
 import com.model.ExactDate
+import com.model.RelativeDirection
 import com.model.TimeUnit
 import com.repository.EventRepository
 
@@ -57,6 +58,24 @@ object DateCalculator {
 	}
 
 	/**
+	 * Get midpoint estimate for vague relative dates (when offset is null)
+	 * Returns a reasonable midpoint value for each time unit
+	 * Positive values indicate "after", negative values indicate "before"
+	 */
+	private fun getVagueOffsetMidpoint(unit: TimeUnit, direction: RelativeDirection?): Double {
+		val midpoint = when (unit) {
+			TimeUnit.Minutes -> 30.0 / MINUTES_PER_DAY  // ~30 minutes
+			TimeUnit.Hours -> 12.0 / HOURS_PER_DAY      // ~12 hours
+			TimeUnit.Days -> 3.5                         // ~3.5 days
+			TimeUnit.Weeks -> 2.5 * DAYS_PER_WEEK       // ~2.5 weeks
+			TimeUnit.Months -> 6.0 * DAYS_PER_MONTH     // ~6 months
+			TimeUnit.Years -> 5.0 * DAYS_PER_YEAR       // ~5 years
+		}
+		// Default to After if direction is not specified
+		return if (direction == RelativeDirection.Before) -midpoint else midpoint
+	}
+
+	/**
 	 * Calculate the absolute date for an event (in days from year 0)
 	 * Returns null if the date cannot be calculated (e.g., circular dependencies)
 	 */
@@ -81,14 +100,20 @@ object DateCalculator {
 			}
 
 			// Relative date: calculate based on referenced event
-			event.relativeEventId != null && event.relativeOffset != null && event.relativeTimeUnit != null -> {
+			event.relativeEventId != null && event.relativeTimeUnit != null -> {
 				val referencedEvent = eventRepository.findById(event.relativeEventId.toHexString())
 					?: return null
 
 				val referencedAbsoluteDate = calculateAbsoluteDate(referencedEvent, eventRepository, visited)
 					?: return null
 
-				val offsetInDays = timeUnitToDays(event.relativeOffset, event.relativeTimeUnit)
+				// If offset is specified, use it; otherwise use midpoint estimate for vague relative
+				val offsetInDays = if (event.relativeOffset != null) {
+					timeUnitToDays(event.relativeOffset, event.relativeTimeUnit)
+				} else {
+					// Vague relative date - use midpoint estimate with direction
+					getVagueOffsetMidpoint(event.relativeTimeUnit, event.relativeDirection)
+				}
 				referencedAbsoluteDate + offsetInDays
 			}
 
@@ -111,7 +136,7 @@ object DateCalculator {
 		}
 
 		// For relative dates, calculate the absolute date and convert back to ExactDate
-		if (event.relativeEventId != null && event.relativeOffset != null && event.relativeTimeUnit != null) {
+		if (event.relativeEventId != null && event.relativeTimeUnit != null) {
 			val absoluteDate = calculateAbsoluteDate(event, eventRepository) ?: return null
 			return daysToExactDate(absoluteDate)
 		}

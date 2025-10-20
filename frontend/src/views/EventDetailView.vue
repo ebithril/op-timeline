@@ -115,6 +115,40 @@
         </div>
       </div>
 
+      <!-- Child Events -->
+      <div v-if="childEvents.length > 0" class="mb-6">
+        <h2 class="text-2xl font-semibold mb-3">Sub-Events</h2>
+        <div class="space-y-2">
+          <router-link
+            v-for="child in childEvents"
+            :key="child._id"
+            :to="`/event/${child._id}`"
+            class="block p-4 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 transition"
+          >
+            <div class="flex justify-between items-start">
+              <div class="flex-1">
+                <h3 class="font-semibold text-lg">{{ child.name }}</h3>
+                <p class="text-sm text-gray-600 mt-1">{{ child.description }}</p>
+                <div class="flex items-center gap-3 mt-2">
+                  <span
+                    :class="[
+                      'px-2 py-0.5 text-xs rounded font-semibold',
+                      getEventTypeColor(child.type)
+                    ]"
+                  >
+                    {{ child.type }}
+                  </span>
+                  <span class="text-xs text-gray-600">
+                    {{ formatDate(child) }}
+                  </span>
+                </div>
+              </div>
+              <span class="text-blue-500">→</span>
+            </div>
+          </router-link>
+        </div>
+      </div>
+
       <div class="text-sm text-gray-500 mt-6 pt-6 border-t">
         <p>Created by {{ eventsStore.currentEvent.createdBy || 'Unknown' }} on {{ formatTimestamp(eventsStore.currentEvent.createdAt) }}</p>
         <p>Last updated by {{ eventsStore.currentEvent.updatedBy || 'Unknown' }} on {{ formatTimestamp(eventsStore.currentEvent.updatedAt) }}</p>
@@ -189,6 +223,7 @@ const charactersStore = useCharactersStore()
 const eventId = ref(route.params.id)
 const showHistory = ref(false)
 const charactersAlive = ref([])
+const childEvents = ref([])
 
 function getEventTypeColor(type) {
   const colors = {
@@ -229,15 +264,23 @@ function formatDate(event) {
 
   // For relative dates, calculate and show the actual date
   if (event.dateType === 'Relative') {
+    // Check if this is a vague relative date (has time unit but no offset)
+    const isVague = event.relativeOffset === null && event.relativeTimeUnit
+    const direction = isVague && event.relativeDirection
+      ? event.relativeDirection.toLowerCase()
+      : event.relativeOffset < 0 ? 'before' : 'after'
+
     // The backend should provide calculatedAbsoluteDate or we can try to calculate from the reference
     // For now, if we have exactDate calculated by backend, use it
     if (event.calculatedExactDate && typeof event.calculatedExactDate === 'object') {
       const dateStr = formatDateObj(event.calculatedExactDate)
 
       // Add relative context
-      if (event.relativeOffset && event.relativeTimeUnit) {
+      if (isVague) {
+        const unit = event.relativeTimeUnit.toLowerCase()
+        return `~${dateStr} (~${unit} ${direction} reference event)`
+      } else if (event.relativeOffset && event.relativeTimeUnit) {
         const offset = Math.abs(event.relativeOffset)
-        const direction = event.relativeOffset < 0 ? 'before' : 'after'
         const unit = event.relativeTimeUnit.toLowerCase()
         return `${dateStr} (${offset} ${unit} ${direction} reference event)`
       }
@@ -249,9 +292,11 @@ function formatDate(event) {
     if (event.displayYear) {
       let baseStr = `Year ${event.displayYear}`
 
-      if (event.relativeOffset && event.relativeTimeUnit) {
+      if (isVague) {
+        const unit = event.relativeTimeUnit.toLowerCase()
+        baseStr = `~${baseStr} (~${unit} ${direction} reference event)`
+      } else if (event.relativeOffset && event.relativeTimeUnit) {
         const offset = Math.abs(event.relativeOffset)
-        const direction = event.relativeOffset < 0 ? 'before' : 'after'
         const unit = event.relativeTimeUnit.toLowerCase()
         baseStr += ` (${offset} ${unit} ${direction} reference event)`
       }
@@ -260,9 +305,11 @@ function formatDate(event) {
     }
 
     // If no calculated date but we have relative info, show that
-    if (event.relativeOffset && event.relativeTimeUnit) {
+    if (isVague) {
+      const unit = event.relativeTimeUnit.toLowerCase()
+      return `~${unit} ${direction} another event`
+    } else if (event.relativeOffset && event.relativeTimeUnit) {
       const offset = Math.abs(event.relativeOffset)
-      const direction = event.relativeOffset < 0 ? 'before' : 'after'
       const unit = event.relativeTimeUnit.toLowerCase()
       return `${offset} ${unit} ${direction} another event`
     }
@@ -333,8 +380,21 @@ async function fetchCharactersAlive() {
   }
 }
 
+async function fetchChildEvents() {
+  try {
+    const response = await eventsStore.fetchChildren(eventId.value)
+    childEvents.value = response || []
+  } catch (error) {
+    console.error('Failed to fetch child events:', error)
+    childEvents.value = []
+  }
+}
+
 onMounted(async () => {
   await eventsStore.fetchById(eventId.value)
-  await fetchCharactersAlive()
+  await Promise.all([
+    fetchCharactersAlive(),
+    fetchChildEvents()
+  ])
 })
 </script>
