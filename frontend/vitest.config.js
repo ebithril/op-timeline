@@ -11,7 +11,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
-        'views/**',
+        'src/views/**',
         'node_modules/**',
         'dist/**',
         '**/*.config.js',
