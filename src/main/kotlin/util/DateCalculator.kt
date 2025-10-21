@@ -14,6 +14,10 @@ object DateCalculator {
 	private const val MINUTES_PER_HOUR = 60.0
 	private const val MINUTES_PER_DAY = HOURS_PER_DAY * MINUTES_PER_HOUR
 
+	// Reference years for One Piece timeline (Kaienreki / Sea Circle Calendar)
+	const val SERIES_START_YEAR = 1522  // Romance Dawn arc begins
+	const val TIMESKIP_END_YEAR = 1524  // Return to Sabaody after 2-year timeskip
+
 	/**
 	 * Convert an ExactDate to absolute days from year 0
 	 */

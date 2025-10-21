@@ -63,10 +63,48 @@
       <!-- Exact Date -->
       <div v-if="eventData.dateType !== 'Relative'" class="mb-6">
         <label class="block text-sm font-semibold mb-2">Date</label>
+
+        <!-- Toggle for relative year input -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useRelativeYearInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Enter year relative to reference</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1522) or timeskip end (1524)</p>
+        </div>
+
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Year *</label>
+            <div v-if="useRelativeYearInput" class="space-y-2">
+              <!-- Reference year selector -->
+              <select
+                v-model="referenceYear"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
+              >
+                <option :value="1522">Series Start (1522)</option>
+                <option :value="1524">Timeskip End (1524)</option>
+              </select>
+
+              <!-- Relative offset input -->
+              <input
+                v-model.number="relativeYearOffset"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                placeholder="e.g., -2 (2 years before)"
+              />
+
+              <!-- Show calculated absolute year -->
+              <p class="text-xs text-gray-600">
+                = Year {{ calculatedAbsoluteYear }}
+              </p>
+            </div>
             <input
+              v-else
               v-model.number="exactDateYear"
               type="number"
               class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
@@ -541,6 +579,7 @@ import { useEventsStore } from '../stores/events'
 import { useCharactersStore } from '../stores/characters'
 import { useArcsStore } from '../stores/arcs'
 import { useLocationsStore } from '../stores/locations'
+import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative } from '../utils/yearDisplay'
 
 const route = useRoute()
 const router = useRouter()
@@ -558,6 +597,16 @@ const error = ref(null)
 const exactDateYear = ref(null)
 const exactDateMonth = ref(null)
 const exactDateDay = ref(null)
+
+// Relative year input mode
+const useRelativeYearInput = ref(false)
+const referenceYear = ref(SERIES_START_YEAR) // Default to series start
+const relativeYearOffset = ref(0)
+
+// Computed property for the calculated absolute year
+const calculatedAbsoluteYear = computed(() => {
+  return relativeToAbsolute(relativeYearOffset.value, referenceYear.value)
+})
 
 // Vague relative date flag
 const isVagueRelative = ref(false)
@@ -586,6 +635,32 @@ watch([vagueOffsetAmount, relativeDirection], () => {
       ? -Math.abs(vagueOffsetAmount.value)
       : Math.abs(vagueOffsetAmount.value)
     eventData.value.relativeDirection = null
+  }
+})
+
+// Watch relative year input mode changes
+watch(useRelativeYearInput, (newValue) => {
+  if (newValue && exactDateYear.value != null) {
+    // Switching TO relative mode: convert absolute year to relative offset
+    relativeYearOffset.value = absoluteToRelative(exactDateYear.value, referenceYear.value)
+  } else if (!newValue && calculatedAbsoluteYear.value != null) {
+    // Switching FROM relative mode: use calculated absolute year
+    exactDateYear.value = calculatedAbsoluteYear.value
+  }
+})
+
+// Watch relative year inputs and update the absolute year
+watch([relativeYearOffset, referenceYear], () => {
+  if (useRelativeYearInput.value) {
+    exactDateYear.value = calculatedAbsoluteYear.value
+  }
+})
+
+// Watch absolute year when not in relative mode
+watch(exactDateYear, (newValue) => {
+  if (!useRelativeYearInput.value && newValue != null && referenceYear.value != null) {
+    // Update relative offset to stay in sync (for when user switches back to relative mode)
+    relativeYearOffset.value = absoluteToRelative(newValue, referenceYear.value)
   }
 })
 

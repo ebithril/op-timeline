@@ -210,6 +210,62 @@ curl -X POST http://localhost:8080/api/users \
 
 The response will include the generated API key for the new user.
 
+## Testing
+
+The project has a comprehensive test suite with 210+ tests covering both backend and frontend:
+
+### Backend Tests (49 tests)
+- DateCalculator utility tests
+- CharacterDateCalculator utility tests
+- Test data builders for all models
+
+```bash
+# Run backend unit tests
+./gradlew test --tests DateCalculatorTest --tests CharacterDateCalculatorTest
+
+# View test report
+open build/reports/tests/test/index.html
+```
+
+### Frontend Tests (161 tests)
+- yearDisplay utility tests (54 tests)
+- Pinia store tests for all stores (107 tests)
+- High coverage with Vitest and Vue Test Utils
+
+```bash
+cd frontend
+
+# Run all tests once
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+open coverage/index.html
+```
+
+### Coverage Targets
+- Lines: 85%
+- Functions: 85%
+- Branches: 80%
+- Statements: 85%
+
+For detailed testing documentation, see [TESTING.md](./TESTING.md).
+
+## CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration:
+
+- ✅ Automated testing on every push and PR
+- ✅ Backend tests with JDK 21
+- ✅ Frontend tests with coverage reporting
+- ✅ Build verification for both backend and frontend
+- ✅ Artifact uploads (JARs, coverage reports)
+
+See `.github/workflows/ci.yml` for the complete pipeline configuration.
+
 ## Development Workflow
 
 ### Backend Development
@@ -220,6 +276,9 @@ The response will include the generated API key for the new user.
 
 # Run tests
 ./gradlew test
+
+# Run specific tests
+./gradlew test --tests DateCalculatorTest
 
 # Build production JAR
 ./gradlew buildFatJar
@@ -232,6 +291,9 @@ cd frontend
 
 # Development server with hot reload
 npm run dev
+
+# Run tests in watch mode
+npm run test:watch
 
 # Build for production
 npm run build

@@ -60,10 +60,48 @@
       <!-- Birth Date -->
       <div class="mb-4">
         <label class="block text-sm font-semibold mb-2">Birth Date</label>
+
+        <!-- Toggle for relative year input -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useBirthRelativeYearInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Enter year relative to reference</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1522) or timeskip end (1524)</p>
+        </div>
+
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Year</label>
+            <div v-if="useBirthRelativeYearInput" class="space-y-2">
+              <!-- Reference year selector -->
+              <select
+                v-model="birthReferenceYear"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
+              >
+                <option :value="1522">Series Start (1522)</option>
+                <option :value="1524">Timeskip End (1524)</option>
+              </select>
+
+              <!-- Relative offset input -->
+              <input
+                v-model.number="birthRelativeYearOffset"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                placeholder="e.g., -22 (22 years before)"
+              />
+
+              <!-- Show calculated absolute year -->
+              <p class="text-xs text-gray-600">
+                = Year {{ calculatedBirthAbsoluteYear }}
+              </p>
+            </div>
             <input
+              v-else
               v-model.number="birthDateYear"
               type="number"
               class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
@@ -98,10 +136,48 @@
       <!-- Death Date -->
       <div class="mb-4">
         <label class="block text-sm font-semibold mb-2">Death Date (if applicable)</label>
+
+        <!-- Toggle for relative year input -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useDeathRelativeYearInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Enter year relative to reference</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1522) or timeskip end (1524)</p>
+        </div>
+
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Year</label>
+            <div v-if="useDeathRelativeYearInput" class="space-y-2">
+              <!-- Reference year selector -->
+              <select
+                v-model="deathReferenceYear"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
+              >
+                <option :value="1522">Series Start (1522)</option>
+                <option :value="1524">Timeskip End (1524)</option>
+              </select>
+
+              <!-- Relative offset input -->
+              <input
+                v-model.number="deathRelativeYearOffset"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                placeholder="e.g., -2 (2 years before)"
+              />
+
+              <!-- Show calculated absolute year -->
+              <p class="text-xs text-gray-600">
+                = Year {{ calculatedDeathAbsoluteYear }}
+              </p>
+            </div>
             <input
+              v-else
               v-model.number="deathDateYear"
               type="number"
               class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
@@ -178,6 +254,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '../stores/characters'
+import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative } from '../utils/yearDisplay'
 
 const route = useRoute()
 const router = useRouter()
@@ -195,6 +272,24 @@ const deathDateYear = ref(null)
 const deathDateMonth = ref(null)
 const deathDateDay = ref(null)
 
+// Birth date relative year input mode
+const useBirthRelativeYearInput = ref(false)
+const birthReferenceYear = ref(SERIES_START_YEAR)
+const birthRelativeYearOffset = ref(0)
+
+const calculatedBirthAbsoluteYear = computed(() => {
+  return relativeToAbsolute(birthRelativeYearOffset.value, birthReferenceYear.value)
+})
+
+// Death date relative year input mode
+const useDeathRelativeYearInput = ref(false)
+const deathReferenceYear = ref(SERIES_START_YEAR)
+const deathRelativeYearOffset = ref(0)
+
+const calculatedDeathAbsoluteYear = computed(() => {
+  return relativeToAbsolute(deathRelativeYearOffset.value, deathReferenceYear.value)
+})
+
 const characterData = ref({
   name: '',
   aliases: [],
@@ -202,6 +297,58 @@ const characterData = ref({
   deathDate: null,
   affiliation: '',
   description: '',
+})
+
+// Watch birth relative year input mode changes
+watch(useBirthRelativeYearInput, (newValue) => {
+  if (newValue && birthDateYear.value != null) {
+    // Switching TO relative mode: convert absolute year to relative offset
+    birthRelativeYearOffset.value = absoluteToRelative(birthDateYear.value, birthReferenceYear.value)
+  } else if (!newValue && calculatedBirthAbsoluteYear.value != null) {
+    // Switching FROM relative mode: use calculated absolute year
+    birthDateYear.value = calculatedBirthAbsoluteYear.value
+  }
+})
+
+// Watch birth relative year inputs and update the absolute year
+watch([birthRelativeYearOffset, birthReferenceYear], () => {
+  if (useBirthRelativeYearInput.value) {
+    birthDateYear.value = calculatedBirthAbsoluteYear.value
+  }
+})
+
+// Watch absolute birth year when not in relative mode
+watch(birthDateYear, (newValue) => {
+  if (!useBirthRelativeYearInput.value && newValue != null && birthReferenceYear.value != null) {
+    // Update relative offset to stay in sync
+    birthRelativeYearOffset.value = absoluteToRelative(newValue, birthReferenceYear.value)
+  }
+})
+
+// Watch death relative year input mode changes
+watch(useDeathRelativeYearInput, (newValue) => {
+  if (newValue && deathDateYear.value != null) {
+    // Switching TO relative mode: convert absolute year to relative offset
+    deathRelativeYearOffset.value = absoluteToRelative(deathDateYear.value, deathReferenceYear.value)
+  } else if (!newValue && calculatedDeathAbsoluteYear.value != null) {
+    // Switching FROM relative mode: use calculated absolute year
+    deathDateYear.value = calculatedDeathAbsoluteYear.value
+  }
+})
+
+// Watch death relative year inputs and update the absolute year
+watch([deathRelativeYearOffset, deathReferenceYear], () => {
+  if (useDeathRelativeYearInput.value) {
+    deathDateYear.value = calculatedDeathAbsoluteYear.value
+  }
+})
+
+// Watch absolute death year when not in relative mode
+watch(deathDateYear, (newValue) => {
+  if (!useDeathRelativeYearInput.value && newValue != null && deathReferenceYear.value != null) {
+    // Update relative offset to stay in sync
+    deathRelativeYearOffset.value = absoluteToRelative(newValue, deathReferenceYear.value)
+  }
 })
 
 // Watch birth date components and update characterData.birthDate

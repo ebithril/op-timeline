@@ -2,23 +2,44 @@
   <div class="timeline-view">
     <h1 class="text-3xl font-bold mb-6 text-one-piece-dark">One Piece Timeline</h1>
 
-    <!-- Character Filter -->
+    <!-- Controls Container -->
     <div class="bg-white p-4 rounded-lg shadow mb-6">
-      <h2 class="text-xl font-semibold mb-3">Filter by Characters</h2>
-      <div class="flex flex-wrap gap-2">
-        <button
-          v-for="character in charactersStore.sortedCharacters"
-          :key="character._id"
-          @click="toggleCharacterFilter(character.name)"
-          :class="[
-            'px-3 py-1 rounded',
-            selectedCharacters.includes(character.name)
-              ? 'bg-one-piece-primary text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-          ]"
+      <!-- Year Display Format Selector -->
+      <div class="mb-4 pb-4 border-b border-gray-200">
+        <label class="block text-sm font-semibold mb-2">Display Years As:</label>
+        <select
+          v-model="yearDisplayMode"
+          @change="saveDisplayModePreference"
+          class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
         >
-          {{ character.name }}
-        </button>
+          <option
+            v-for="(label, mode) in displayModeLabels"
+            :key="mode"
+            :value="mode"
+          >
+            {{ label }}
+          </option>
+        </select>
+      </div>
+
+      <!-- Character Filter -->
+      <div>
+        <h2 class="text-xl font-semibold mb-3">Filter by Characters</h2>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="character in charactersStore.sortedCharacters"
+            :key="character._id"
+            @click="toggleCharacterFilter(character.name)"
+            :class="[
+              'px-3 py-1 rounded',
+              selectedCharacters.includes(character.name)
+                ? 'bg-one-piece-primary text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            ]"
+          >
+            {{ character.name }}
+          </button>
+        </div>
       </div>
     </div>
 
@@ -134,12 +155,25 @@ import { ref, computed, onMounted } from 'vue'
 import { useEventsStore } from '../stores/events'
 import { useCharactersStore } from '../stores/characters'
 import { useAuthStore } from '../stores/auth'
+import {
+  DisplayMode,
+  displayModeLabels,
+  formatYearDisplay,
+  formatFullDateDisplay,
+  getDisplayModePreference,
+  saveDisplayModePreference as savePreference
+} from '../utils/yearDisplay'
 
 const eventsStore = useEventsStore()
 const charactersStore = useCharactersStore()
 const authStore = useAuthStore()
 
 const selectedCharacters = ref([])
+const yearDisplayMode = ref(getDisplayModePreference())
+
+function saveDisplayModePreference() {
+  savePreference(yearDisplayMode.value)
+}
 
 const filteredEvents = computed(() => {
   if (selectedCharacters.value.length === 0) {
@@ -180,16 +214,18 @@ function formatDate(event) {
     'July', 'August', 'September', 'October', 'November', 'December'
   ]
 
-  // Helper function to format a date object
+  // Helper function to format a date object using the selected display mode
   const formatDateObj = (dateObj) => {
     if (!dateObj) return null
     const { year, month, day } = dateObj
+    const formattedYear = formatYearDisplay(year, yearDisplayMode.value)
+
     if (day && month) {
-      return `${monthNames[month - 1]} ${day}, Year ${year}`
+      return `${monthNames[month - 1]} ${day}, ${formattedYear}`
     } else if (month) {
-      return `${monthNames[month - 1]} ${year}`
+      return `${monthNames[month - 1]} ${formattedYear}`
     } else {
-      return `Year ${year}`
+      return formattedYear
     }
   }
 
@@ -256,17 +292,20 @@ function formatDate(event) {
 
   // Use displayYear if available (calculated from exact or relative dates)
   if (event.displayYear) {
+    const formattedYear = formatYearDisplay(event.displayYear, yearDisplayMode.value)
     if (event.dateType === 'Approximation') {
-      return `~Year ${event.displayYear}`
+      return `~${formattedYear}`
     }
-    return `Year ${event.displayYear}`
+    return formattedYear
   }
 
   // Fallback for old format (simple number)
   if (event.dateType === 'Exact' && event.exactDate) {
-    return `Year ${event.exactDate}`
+    const formattedYear = formatYearDisplay(event.exactDate, yearDisplayMode.value)
+    return formattedYear
   } else if (event.dateType === 'Approximation' && event.exactDate) {
-    return `~Year ${event.exactDate}`
+    const formattedYear = formatYearDisplay(event.exactDate, yearDisplayMode.value)
+    return `~${formattedYear}`
   }
 
   return 'Date unknown'
