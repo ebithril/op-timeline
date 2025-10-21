@@ -11,6 +11,28 @@ describe('useLocationsStore', () => {
     vi.clearAllMocks()
   })
 
+  describe('initial state', () => {
+    it('initializes with empty locations array', () => {
+      const store = useLocationsStore()
+      expect(store.locations).toEqual([])
+    })
+
+    it('initializes with null currentLocation', () => {
+      const store = useLocationsStore()
+      expect(store.currentLocation).toBeNull()
+    })
+
+    it('initializes with loading false', () => {
+      const store = useLocationsStore()
+      expect(store.loading).toBe(false)
+    })
+
+    it('initializes with null error', () => {
+      const store = useLocationsStore()
+      expect(store.error).toBeNull()
+    })
+  })
+
   describe('sortedLocations computed', () => {
     it('sorts locations by type then name', () => {
       const store = useLocationsStore()
@@ -28,6 +50,82 @@ describe('useLocationsStore', () => {
       expect(sorted[2].type).toBe('Kingdom')
       expect(sorted[2].name).toBe('Wano')
       expect(sorted[3].type).toBe('CityTownVillage')
+    })
+
+    it('does not mutate original locations array', () => {
+      const store = useLocationsStore()
+      store.locations = [
+        { _id: '1', name: 'Water 7', type: 'CityTownVillage' },
+        { _id: '2', name: 'East Blue', type: 'Sea' },
+      ]
+
+      const originalOrder = store.locations[0].name
+      store.sortedLocations // Access computed property
+
+      expect(store.locations[0].name).toBe(originalOrder)
+    })
+  })
+
+  describe('fetchAll', () => {
+    it('fetches all locations successfully', async () => {
+      const store = useLocationsStore()
+      const mockLocations = [
+        { _id: '1', name: 'Water 7' },
+        { _id: '2', name: 'Alabasta' },
+      ]
+
+      locationsAPI.getAll = vi.fn().mockResolvedValue({ data: mockLocations })
+
+      await store.fetchAll()
+
+      expect(store.locations).toEqual(mockLocations)
+      expect(store.error).toBeNull()
+    })
+
+    it('sets loading to true during fetch', async () => {
+      const store = useLocationsStore()
+      locationsAPI.getAll = vi.fn().mockResolvedValue({ data: [] })
+
+      const promise = store.fetchAll()
+      expect(store.loading).toBe(true)
+      await promise
+    })
+
+    it('sets error on fetch failure', async () => {
+      const store = useLocationsStore()
+      locationsAPI.getAll = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Network error' } },
+      })
+
+      await store.fetchAll()
+
+      expect(store.error).toBe('Network error')
+      expect(store.loading).toBe(false)
+    })
+  })
+
+  describe('fetchById', () => {
+    it('fetches location by id successfully', async () => {
+      const store = useLocationsStore()
+      const mockLocation = { _id: '123', name: 'Water 7' }
+
+      locationsAPI.getById = vi.fn().mockResolvedValue({ data: mockLocation })
+
+      const result = await store.fetchById('123')
+
+      expect(store.currentLocation).toEqual(mockLocation)
+      expect(result).toEqual(mockLocation)
+      expect(locationsAPI.getById).toHaveBeenCalledWith('123')
+    })
+
+    it('throws error on fetch failure', async () => {
+      const store = useLocationsStore()
+      locationsAPI.getById = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Not found' } },
+      })
+
+      await expect(store.fetchById('123')).rejects.toThrow()
+      expect(store.error).toBe('Not found')
     })
   })
 
@@ -95,9 +193,22 @@ describe('useLocationsStore', () => {
 
       locationsAPI.create = vi.fn().mockResolvedValue({ data: created })
 
-      await store.create(newLocation)
+      const result = await store.create(newLocation)
 
+      expect(result).toEqual(created)
       expect(store.locations).toContainEqual(created)
+    })
+
+    it('throws error on create failure', async () => {
+      const store = useLocationsStore()
+      const newLocation = { name: 'Test' }
+
+      locationsAPI.create = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Validation failed' } },
+      })
+
+      await expect(store.create(newLocation)).rejects.toThrow()
+      expect(store.error).toBe('Validation failed')
     })
 
     it('updates location', async () => {
@@ -107,9 +218,20 @@ describe('useLocationsStore', () => {
       const updated = { _id: '123', name: 'New' }
       locationsAPI.update = vi.fn().mockResolvedValue({ data: updated })
 
-      await store.update('123', updated)
+      const result = await store.update('123', updated)
 
+      expect(result).toEqual(updated)
       expect(store.locations[0].name).toBe('New')
+    })
+
+    it('throws error on update failure', async () => {
+      const store = useLocationsStore()
+      locationsAPI.update = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Update failed' } },
+      })
+
+      await expect(store.update('123', {})).rejects.toThrow()
+      expect(store.error).toBe('Update failed')
     })
 
     it('deletes location', async () => {
@@ -124,6 +246,17 @@ describe('useLocationsStore', () => {
       await store.deleteLocation('123')
 
       expect(store.locations).toHaveLength(1)
+      expect(store.locations[0]._id).toBe('456')
+    })
+
+    it('throws error on delete failure', async () => {
+      const store = useLocationsStore()
+      locationsAPI.delete = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Delete failed' } },
+      })
+
+      await expect(store.deleteLocation('123')).rejects.toThrow()
+      expect(store.error).toBe('Delete failed')
     })
   })
 })

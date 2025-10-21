@@ -50,6 +50,28 @@ describe('useArcsStore', () => {
     })
   })
 
+  describe('initial state', () => {
+    it('initializes with empty arcs array', () => {
+      const store = useArcsStore()
+      expect(store.arcs).toEqual([])
+    })
+
+    it('initializes with null currentArc', () => {
+      const store = useArcsStore()
+      expect(store.currentArc).toBeNull()
+    })
+
+    it('initializes with loading false', () => {
+      const store = useArcsStore()
+      expect(store.loading).toBe(false)
+    })
+
+    it('initializes with null error', () => {
+      const store = useArcsStore()
+      expect(store.error).toBeNull()
+    })
+  })
+
   describe('fetchAll', () => {
     it('fetches all arcs successfully', async () => {
       const store = useArcsStore()
@@ -64,6 +86,52 @@ describe('useArcsStore', () => {
 
       expect(store.arcs).toEqual(mockArcs)
       expect(store.error).toBeNull()
+    })
+
+    it('sets loading to true during fetch', async () => {
+      const store = useArcsStore()
+      arcsAPI.getAll = vi.fn().mockResolvedValue({ data: [] })
+
+      const promise = store.fetchAll()
+      expect(store.loading).toBe(true)
+      await promise
+    })
+
+    it('sets error on fetch failure', async () => {
+      const store = useArcsStore()
+      arcsAPI.getAll = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Network error' } },
+      })
+
+      await store.fetchAll()
+
+      expect(store.error).toBe('Network error')
+      expect(store.loading).toBe(false)
+    })
+  })
+
+  describe('fetchById', () => {
+    it('fetches arc by id successfully', async () => {
+      const store = useArcsStore()
+      const mockArc = { _id: '123', name: 'Dressrosa' }
+
+      arcsAPI.getById = vi.fn().mockResolvedValue({ data: mockArc })
+
+      await store.fetchById('123')
+
+      expect(store.currentArc).toEqual(mockArc)
+      expect(arcsAPI.getById).toHaveBeenCalledWith('123')
+    })
+
+    it('sets error on fetch failure', async () => {
+      const store = useArcsStore()
+      arcsAPI.getById = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Not found' } },
+      })
+
+      await store.fetchById('123')
+
+      expect(store.error).toBe('Not found')
     })
   })
 
@@ -82,6 +150,17 @@ describe('useArcsStore', () => {
       expect(store.arcs).toEqual(mockArcs)
       expect(arcsAPI.getBySagaId).toHaveBeenCalledWith('saga123')
     })
+
+    it('sets error on fetch failure', async () => {
+      const store = useArcsStore()
+      arcsAPI.getBySagaId = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Saga not found' } },
+      })
+
+      await store.fetchBySagaId('invalid')
+
+      expect(store.error).toBe('Saga not found')
+    })
   })
 
   describe('CRUD operations', () => {
@@ -98,6 +177,18 @@ describe('useArcsStore', () => {
       expect(store.arcs).toContainEqual(createdArc)
     })
 
+    it('throws error on create failure', async () => {
+      const store = useArcsStore()
+      const newArc = { name: 'New Arc' }
+
+      arcsAPI.create = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Validation failed' } },
+      })
+
+      await expect(store.create(newArc)).rejects.toThrow()
+      expect(store.error).toBe('Validation failed')
+    })
+
     it('updates arc successfully', async () => {
       const store = useArcsStore()
       store.arcs = [{ _id: '123', name: 'Old Name' }]
@@ -108,6 +199,16 @@ describe('useArcsStore', () => {
       await store.update('123', updatedArc)
 
       expect(store.arcs[0]).toEqual(updatedArc)
+    })
+
+    it('throws error on update failure', async () => {
+      const store = useArcsStore()
+      arcsAPI.update = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Update failed' } },
+      })
+
+      await expect(store.update('123', {})).rejects.toThrow()
+      expect(store.error).toBe('Update failed')
     })
 
     it('deletes arc successfully', async () => {
@@ -123,6 +224,16 @@ describe('useArcsStore', () => {
 
       expect(store.arcs).toHaveLength(1)
       expect(store.arcs[0]._id).toBe('456')
+    })
+
+    it('throws error on delete failure', async () => {
+      const store = useArcsStore()
+      arcsAPI.delete = vi.fn().mockRejectedValue({
+        response: { data: { error: 'Delete failed' } },
+      })
+
+      await expect(store.deleteArc('123')).rejects.toThrow()
+      expect(store.error).toBe('Delete failed')
     })
   })
 })
