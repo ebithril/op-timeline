@@ -1,0 +1,35 @@
+# Build outputs
+build/
+.gradle/
+*.jar
+*.war
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation
+*.md
+docs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Test outputs
+**/test-results/
+**/coverage/

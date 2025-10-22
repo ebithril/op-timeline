@@ -1,6 +1,8 @@
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
+// Use empty string in production to make requests relative to the current domain
+// In development, VITE_API_BASE_URL can be set to http://localhost:8080
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || ''
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,

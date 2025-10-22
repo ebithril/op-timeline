@@ -12,7 +12,8 @@ import io.ktor.server.routing.*
 
 fun Application.configureRouting() {
     routing {
-	staticResources("/", "static")
+	// Serve frontend files from static/dist
+	staticResources("/", "static/dist")
 
 	// API routes
 	eventRoutes()
