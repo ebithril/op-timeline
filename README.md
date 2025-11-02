@@ -177,7 +177,7 @@ curl -X POST http://localhost:8080/api/events \
     "type": "Event",
     "description": "Luffy sets sail from his home village to begin his pirate adventure",
     "dateType": "Exact",
-    "exactDate": 1522,
+    "exactDate": 1539,
     "chapter": 1,
     "involvedCharacters": ["Monkey D. Luffy"],
     "sources": [{

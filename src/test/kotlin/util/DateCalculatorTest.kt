@@ -89,7 +89,7 @@ class DateCalculatorTest {
         val result = DateCalculator.calculateAbsoluteDate(event, mockRepo)
 
         result.shouldNotBeNull()
-        result shouldBeExactly (1522.0 * 365.0)
+        result shouldBeExactly (1539.0 * 365.0)
     }
 
     @Test
@@ -102,7 +102,7 @@ class DateCalculatorTest {
         val result = DateCalculator.calculateAbsoluteDate(event, mockRepo)
 
         result.shouldNotBeNull()
-        result shouldBeExactly (1524.0 * 365.0)
+        result shouldBeExactly (1541.0 * 365.0)
     }
 
     // Test daysToExactDate conversion through calculateExactDate

@@ -103,7 +103,7 @@ fun Route.characterRoutes() {
 			}
 
 			try {
-				// Parse date string in format "year-month-day" (e.g., "1522-2-10")
+				// Parse date string in format "year-month-day" (e.g., "1539-2-10")
 				val dateParts = dateString.split("-")
 				if (dateParts.size != 3) {
 					call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Invalid date format. Expected: year-month-day"))

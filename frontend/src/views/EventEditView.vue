@@ -74,7 +74,7 @@
             />
             <span class="text-sm font-semibold">Enter year relative to reference</span>
           </label>
-          <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1522) or timeskip end (1524)</p>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1539) or timeskip end (1541)</p>
         </div>
 
         <div class="grid grid-cols-3 gap-4">
@@ -86,8 +86,8 @@
                 v-model="referenceYear"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
               >
-                <option :value="1522">Series Start (1522)</option>
-                <option :value="1524">Timeskip End (1524)</option>
+                <option :value="1539">Series Start (1539)</option>
+                <option :value="1541">Timeskip End (1541)</option>
               </select>
 
               <!-- Relative offset input -->
