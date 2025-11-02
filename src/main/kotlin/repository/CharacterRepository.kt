@@ -2,7 +2,7 @@ package com.repository
 
 import com.config.DatabaseConfig
 import com.model.Character
-import com.util.CharacterDateCalculator
+import com.util.DateCalculator
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Sorts
 import com.mongodb.kotlin.client.coroutine.MongoCollection
@@ -40,10 +40,7 @@ class CharacterRepository(private val eventRepository: EventRepository) {
 
 	suspend fun create(character: Character, username: String): Character {
 		// Calculate birth and death dates before creating
-		val characterWithDates = CharacterDateCalculator.updateCharacterWithCalculatedDates(
-			character,
-			eventRepository
-		)
+		val characterWithDates = updateCharacterWithCalculatedDates(character)
 
 		val newCharacter = characterWithDates.copy(
 			createdAt = System.currentTimeMillis(),
@@ -59,10 +56,7 @@ class CharacterRepository(private val eventRepository: EventRepository) {
 		val existingCharacter = findById(id) ?: return null
 
 		// Recalculate birth and death dates before updating
-		val characterWithDates = CharacterDateCalculator.updateCharacterWithCalculatedDates(
-			character,
-			eventRepository
-		)
+		val characterWithDates = updateCharacterWithCalculatedDates(character)
 
 		val updatedCharacter = characterWithDates.copy(
 			_id = existingCharacter._id,
@@ -101,5 +95,87 @@ class CharacterRepository(private val eventRepository: EventRepository) {
 				)
 			)
 		).toList()
+	}
+
+	/**
+	 * Calculate birth date for a character
+	 * Returns the absolute date in days from year 0
+	 */
+	private suspend fun calculateBirthDate(character: Character): Double? {
+		return when {
+			// Exact birth date specified
+			character.birthDate != null -> {
+				DateCalculator.exactDateToDays(character.birthDate)
+			}
+
+			// Birth linked to an event
+			character.birthEventId != null -> {
+				val birthEvent = eventRepository.findById(character.birthEventId.toHexString())
+					?: return null
+
+				val eventAbsoluteDate = birthEvent.calculatedAbsoluteDate ?: return null
+
+				// Apply offset if specified
+				val offsetInDays = if (character.birthRelativeOffset != null && character.birthRelativeTimeUnit != null) {
+					DateCalculator.timeUnitToDays(character.birthRelativeOffset, character.birthRelativeTimeUnit)
+				} else {
+					0.0
+				}
+
+				eventAbsoluteDate + offsetInDays
+			}
+
+			else -> null
+		}
+	}
+
+	/**
+	 * Calculate death date for a character
+	 * Returns the absolute date in days from year 0
+	 */
+	private suspend fun calculateDeathDate(character: Character): Double? {
+		return when {
+			// Exact death date specified
+			character.deathDate != null -> {
+				DateCalculator.exactDateToDays(character.deathDate)
+			}
+
+			// Death linked to an event
+			character.deathEventId != null -> {
+				val deathEvent = eventRepository.findById(character.deathEventId.toHexString())
+					?: return null
+
+				val eventAbsoluteDate = deathEvent.calculatedAbsoluteDate ?: return null
+
+				// Apply offset if specified
+				val offsetInDays = if (character.deathRelativeOffset != null && character.deathRelativeTimeUnit != null) {
+					DateCalculator.timeUnitToDays(character.deathRelativeOffset, character.deathRelativeTimeUnit)
+				} else {
+					0.0
+				}
+
+				eventAbsoluteDate + offsetInDays
+			}
+
+			else -> null
+		}
+	}
+
+	/**
+	 * Update a character with calculated dates
+	 */
+	private suspend fun updateCharacterWithCalculatedDates(character: Character): Character {
+		val birthAbsoluteDate = calculateBirthDate(character)
+		val deathAbsoluteDate = calculateDeathDate(character)
+
+		val displayBirthYear = character.birthDate?.year ?: birthAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
+		val displayDeathYear = character.deathDate?.year ?: deathAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
+
+		return character.copy(
+			calculatedBirthDate = birthAbsoluteDate,
+			calculatedDeathDate = deathAbsoluteDate,
+			displayBirthYear = displayBirthYear,
+			displayDeathYear = displayDeathYear
+		)
 	}
 }

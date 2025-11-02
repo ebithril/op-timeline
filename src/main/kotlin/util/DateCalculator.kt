@@ -7,8 +7,8 @@ import com.model.TimeUnit
 import com.repository.EventRepository
 
 object DateCalculator {
-	private const val DAYS_PER_YEAR = 365.0
-	private const val DAYS_PER_MONTH = 30.0
+	const val DAYS_PER_YEAR = 365.0
+	const val DAYS_PER_MONTH = 30.0
 	private const val DAYS_PER_WEEK = 7.0
 	private const val HOURS_PER_DAY = 24.0
 	private const val MINUTES_PER_HOUR = 60.0
@@ -21,7 +21,7 @@ object DateCalculator {
 	/**
 	 * Convert an ExactDate to absolute days from year 0
 	 */
-	private fun exactDateToDays(date: ExactDate): Double {
+	fun exactDateToDays(date: ExactDate): Double {
 		var days = date.year * DAYS_PER_YEAR
 		if (date.month != null) {
 			days += (date.month - 1) * DAYS_PER_MONTH
@@ -50,7 +50,7 @@ object DateCalculator {
 	/**
 	 * Convert TimeUnit to days
 	 */
-	private fun timeUnitToDays(amount: Int, unit: TimeUnit): Double {
+	fun timeUnitToDays(amount: Int, unit: TimeUnit): Double {
 		return when (unit) {
 			TimeUnit.Minutes -> amount / MINUTES_PER_DAY
 			TimeUnit.Hours -> amount / HOURS_PER_DAY

@@ -73,6 +73,7 @@ The backend follows a layered architecture pattern:
 - Data access layer interfacing with MongoDB
 - Each repository handles CRUD operations and queries for its domain model
 - EventRepository includes special methods for version history and date calculations
+- CharacterRepository includes private methods for calculating character birth/death dates using DateCalculator utilities
 
 **Middleware** (`src/main/kotlin/middleware/`)
 - `AuthMiddleware.kt`: API key-based authentication with role-based access control
@@ -85,9 +86,11 @@ The backend follows a layered architecture pattern:
 - `EventVersion.kt` tracks full version history for wiki-style editing
 
 **Utilities** (`src/main/kotlin/util/`)
-- `DateCalculator.kt`: Converts between date formats and calculates absolute dates from relative dates
-- Handles circular dependency detection when resolving relative date chains
-- `CharacterDateCalculator.kt`: Determines when characters were alive based on birth/death events
+- `DateCalculator.kt`: Provides shared date calculation utilities including:
+  - Converting between date formats (ExactDate to absolute days and vice versa)
+  - Calculating absolute dates from relative dates with circular dependency detection
+  - Converting time units to days
+  - Public helper functions used by repositories for date calculations
 
 **Configuration** (`src/main/kotlin/config/`)
 - `DatabaseConfig.kt`: MongoDB client initialization and lifecycle management
