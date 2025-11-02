@@ -131,10 +131,15 @@ fun Route.characterRoutes() {
 				val characters = characterRepository.findAliveAtDate(dateInDays)
 
 				// Add age information to each character
+				// In One Piece, characters age on January 1st each year, so we use year difference only
 				val charactersWithAge = characters.map { character ->
 					val age = if (character.calculatedBirthDate != null) {
-						val ageInDays = dateInDays - character.calculatedBirthDate
-						val ageInYears = (ageInDays / DAYS_PER_YEAR).toInt()
+						// Extract year from birth date (stored as days from year 0)
+						val birthYear = (character.calculatedBirthDate / DAYS_PER_YEAR).toInt()
+						// Extract year from query date
+						val queryYear = (dateInDays / DAYS_PER_YEAR).toInt()
+						// Age = year difference only
+						val ageInYears = queryYear - birthYear
 						if (ageInYears >= 0) ageInYears else null
 					} else {
 						null
