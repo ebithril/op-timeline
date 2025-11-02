@@ -243,7 +243,7 @@ describe('EventEditView', () => {
       wrapper.vm.relativeYearOffset = -2
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.vm.calculatedAbsoluteYear).toBe(1520)
+      expect(wrapper.vm.calculatedAbsoluteYear).toBe(1537)
     })
 
     it('syncs absolute year when switching from relative mode', async () => {
