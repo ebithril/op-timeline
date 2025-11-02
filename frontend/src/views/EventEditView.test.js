@@ -239,7 +239,7 @@ describe('EventEditView', () => {
       const wrapper = await mountComponent()
 
       wrapper.vm.useRelativeYearInput = true
-      wrapper.vm.referenceYear = 1522
+      wrapper.vm.referenceYear = 1539
       wrapper.vm.relativeYearOffset = -2
       await wrapper.vm.$nextTick()
 
@@ -251,22 +251,22 @@ describe('EventEditView', () => {
       const wrapper = await mountComponent()
 
       wrapper.vm.useRelativeYearInput = true
-      wrapper.vm.referenceYear = 1522
+      wrapper.vm.referenceYear = 1539
       wrapper.vm.relativeYearOffset = 2
       await wrapper.vm.$nextTick()
 
       wrapper.vm.useRelativeYearInput = false
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.vm.exactDateYear).toBe(1524)
+      expect(wrapper.vm.exactDateYear).toBe(1541)
     })
 
     it('converts absolute year to relative offset when switching to relative mode', async () => {
       await router.push('/event/new')
       const wrapper = await mountComponent()
 
-      wrapper.vm.exactDateYear = 1524
-      wrapper.vm.referenceYear = 1522
+      wrapper.vm.exactDateYear = 1541
+      wrapper.vm.referenceYear = 1539
       await wrapper.vm.$nextTick()
 
       wrapper.vm.useRelativeYearInput = true
@@ -420,8 +420,8 @@ describe('EventEditView', () => {
     beforeEach(() => {
       eventsStore.events = [
         { _id: 'e1', name: 'Battle of Marineford', displayYear: 1520 },
-        { _id: 'e2', name: 'Timeskip', displayYear: 1522 },
-        { _id: 'e3', name: 'Battle of Dressrosa', displayYear: 1524 },
+        { _id: 'e2', name: 'Timeskip', displayYear: 1539 },
+        { _id: 'e3', name: 'Battle of Dressrosa', displayYear: 1541 },
       ]
     })
 

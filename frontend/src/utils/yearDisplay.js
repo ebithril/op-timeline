@@ -1,6 +1,6 @@
 // Reference years for One Piece timeline (Kaienreki / Sea Circle Calendar)
-export const SERIES_START_YEAR = 1522  // Romance Dawn arc begins
-export const TIMESKIP_END_YEAR = 1524  // Return to Sabaody after 2-year timeskip
+export const SERIES_START_YEAR = 1539  // Romance Dawn arc begins
+export const TIMESKIP_END_YEAR = 1541  // Return to Sabaody after 2-year timeskip
 
 // Display mode constants
 export const DisplayMode = {
@@ -12,14 +12,14 @@ export const DisplayMode = {
 // Display mode labels for UI
 export const displayModeLabels = {
   [DisplayMode.KAIENREKI]: 'Kaienreki (Absolute)',
-  [DisplayMode.SERIES_START]: 'Relative to Series Start (1522)',
-  [DisplayMode.TIMESKIP_END]: 'Relative to Timeskip End (1524)'
+  [DisplayMode.SERIES_START]: 'Relative to Series Start (1539)',
+  [DisplayMode.TIMESKIP_END]: 'Relative to Timeskip End (1541)'
 }
 
 /**
  * Convert an absolute year to a relative offset from a reference year
- * @param {number} absoluteYear - The absolute year (e.g., 1520)
- * @param {number} referenceYear - The reference year (e.g., 1522)
+ * @param {number} absoluteYear - The absolute year (e.g., 1537)
+ * @param {number} referenceYear - The reference year (e.g., 1539)
  * @returns {number} - The relative offset (e.g., -2)
  */
 export function absoluteToRelative(absoluteYear, referenceYear) {
@@ -30,8 +30,8 @@ export function absoluteToRelative(absoluteYear, referenceYear) {
 /**
  * Convert a relative offset to an absolute year
  * @param {number} relativeOffset - The relative offset (e.g., -2)
- * @param {number} referenceYear - The reference year (e.g., 1522)
- * @returns {number} - The absolute year (e.g., 1520)
+ * @param {number} referenceYear - The reference year (e.g., 1539)
+ * @returns {number} - The absolute year (e.g., 1537)
  */
 export function relativeToAbsolute(relativeOffset, referenceYear) {
   if (relativeOffset == null || referenceYear == null) return null
@@ -53,14 +53,14 @@ export function formatYearDisplay(absoluteYear, displayMode = DisplayMode.KAIENR
 
     case DisplayMode.SERIES_START: {
       const offset = absoluteToRelative(absoluteYear, SERIES_START_YEAR)
-      if (offset === 0) return 'Series Start (1522)'
+      if (offset === 0) return 'Series Start (1539)'
       if (offset > 0) return `+${offset} years`
       return `${offset} years`
     }
 
     case DisplayMode.TIMESKIP_END: {
       const offset = absoluteToRelative(absoluteYear, TIMESKIP_END_YEAR)
-      if (offset === 0) return 'Timeskip End (1524)'
+      if (offset === 0) return 'Timeskip End (1541)'
       if (offset > 0) return `+${offset} years`
       return `${offset} years`
     }

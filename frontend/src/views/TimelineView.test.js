@@ -288,7 +288,7 @@ describe('TimelineView', () => {
       const wrapper = mountComponent()
       const event = {
         dateType: 'Relative',
-        calculatedExactDate: { year: 1522, month: 5, day: 10 },
+        calculatedExactDate: { year: 1539, month: 5, day: 10 },
         relativeOffset: 3,
         relativeTimeUnit: 'Days',
       }

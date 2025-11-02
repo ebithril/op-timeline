@@ -280,10 +280,10 @@ describe('CharactersView', () => {
 
     it('formats event with exactDate object', () => {
       const wrapper = mountComponent()
-      const event = { exactDate: { year: 1522, month: 5, day: 10 } }
+      const event = { exactDate: { year: 1539, month: 5, day: 10 } }
 
       const formatted = wrapper.vm.formatEventDate(event)
-      expect(formatted).toBe('Year 1522')
+      expect(formatted).toBe('Year 1539')
     })
 
     it('formats event with exactDate as number', () => {
@@ -424,13 +424,13 @@ describe('CharactersView', () => {
 
     it('displays character death date when available', async () => {
       charactersStore.characters = [
-        { _id: '1', name: 'Ace', birthDate: 1480, deathDate: 1522 },
+        { _id: '1', name: 'Ace', birthDate: 1480, deathDate: 1539 },
       ]
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
       expect(wrapper.text()).toContain('Died:')
-      expect(wrapper.text()).toContain('1522')
+      expect(wrapper.text()).toContain('1539')
     })
 
     it('displays character aliases when available', async () => {
