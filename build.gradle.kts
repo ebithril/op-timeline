@@ -39,6 +39,10 @@ dependencies {
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine:5.2.1")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:5.1.0")
 
+    // Metrics
+    implementation("io.ktor:ktor-server-metrics-micrometer")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
+
     // Testing dependencies
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
