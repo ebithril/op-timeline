@@ -1,19 +1,22 @@
 // Reference years for One Piece timeline (Kaienreki / Sea Circle Calendar)
 export const SERIES_START_YEAR = 1539  // Romance Dawn arc begins
 export const TIMESKIP_END_YEAR = 1541  // Return to Sabaody after 2-year timeskip
+export const TENREKI_OFFSET = 2600  // Offset for Tenreki (Sky Calendar)
 
 // Display mode constants
 export const DisplayMode = {
   KAIENREKI: 'kaienreki',
   SERIES_START: 'seriesStart',
-  TIMESKIP_END: 'timeskipEnd'
+  TIMESKIP_END: 'timeskipEnd',
+  TENREKI: 'tenreki'
 }
 
 // Display mode labels for UI
 export const displayModeLabels = {
   [DisplayMode.KAIENREKI]: 'Kaienreki (Absolute)',
   [DisplayMode.SERIES_START]: 'Relative to Series Start (1539)',
-  [DisplayMode.TIMESKIP_END]: 'Relative to Timeskip End (1541)'
+  [DisplayMode.TIMESKIP_END]: 'Relative to Timeskip End (1541)',
+  [DisplayMode.TENREKI]: 'Tenreki (Sky Calendar)'
 }
 
 /**
@@ -36,6 +39,26 @@ export function absoluteToRelative(absoluteYear, referenceYear) {
 export function relativeToAbsolute(relativeOffset, referenceYear) {
   if (relativeOffset == null || referenceYear == null) return null
   return referenceYear + relativeOffset
+}
+
+/**
+ * Convert Kaienreki year to Tenreki (Sky Calendar) year
+ * @param {number} kaienrekiYear - The Kaienreki year (e.g., 1539)
+ * @returns {number} - The Tenreki year (e.g., 4139)
+ */
+export function kaienrekiToTenreki(kaienrekiYear) {
+  if (kaienrekiYear == null) return null
+  return kaienrekiYear + TENREKI_OFFSET
+}
+
+/**
+ * Convert Tenreki (Sky Calendar) year to Kaienreki year
+ * @param {number} tenrekiYear - The Tenreki year (e.g., 4139)
+ * @returns {number} - The Kaienreki year (e.g., 1539)
+ */
+export function tenrekiToKaienreki(tenrekiYear) {
+  if (tenrekiYear == null) return null
+  return tenrekiYear - TENREKI_OFFSET
 }
 
 /**
@@ -64,6 +87,9 @@ export function formatYearDisplay(absoluteYear, displayMode = DisplayMode.KAIENR
       if (offset > 0) return `+${offset} years`
       return `${offset} years`
     }
+
+    case DisplayMode.TENREKI:
+      return `${kaienrekiToTenreki(absoluteYear)}`
 
     default:
       return `${absoluteYear}`

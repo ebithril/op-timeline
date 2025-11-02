@@ -61,6 +61,19 @@
       <div class="mb-4">
         <label class="block text-sm font-semibold mb-2">Birth Date</label>
 
+        <!-- Toggle for calendar input mode -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useBirthKaienrekiInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Use Kaienreki (default)</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Uncheck to input years in Tenreki (Sky Calendar, +2600 years)</p>
+        </div>
+
         <!-- Toggle for relative year input -->
         <div class="mb-3">
           <label class="flex items-center gap-2">
@@ -100,13 +113,17 @@
                 = Year {{ calculatedBirthAbsoluteYear }}
               </p>
             </div>
-            <input
-              v-else
-              v-model.number="birthDateYear"
-              type="number"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="e.g., 1500"
-            />
+            <div v-else>
+              <input
+                v-model.number="displayedBirthYear"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                :placeholder="useBirthKaienrekiInput ? 'e.g., 1500' : 'e.g., 4100'"
+              />
+              <p v-if="!useBirthKaienrekiInput && birthDateYear != null" class="text-xs text-gray-500 mt-1">
+                Kaienreki: {{ birthDateYear }}
+              </p>
+            </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Month</label>
@@ -136,6 +153,19 @@
       <!-- Death Date -->
       <div class="mb-4">
         <label class="block text-sm font-semibold mb-2">Death Date (if applicable)</label>
+
+        <!-- Toggle for calendar input mode -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useDeathKaienrekiInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Use Kaienreki (default)</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">Uncheck to input years in Tenreki (Sky Calendar, +2600 years)</p>
+        </div>
 
         <!-- Toggle for relative year input -->
         <div class="mb-3">
@@ -176,13 +206,17 @@
                 = Year {{ calculatedDeathAbsoluteYear }}
               </p>
             </div>
-            <input
-              v-else
-              v-model.number="deathDateYear"
-              type="number"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="e.g., 1520"
-            />
+            <div v-else>
+              <input
+                v-model.number="displayedDeathYear"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                :placeholder="useDeathKaienrekiInput ? 'e.g., 1520' : 'e.g., 4120'"
+              />
+              <p v-if="!useDeathKaienrekiInput && deathDateYear != null" class="text-xs text-gray-500 mt-1">
+                Kaienreki: {{ deathDateYear }}
+              </p>
+            </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Month</label>
@@ -254,7 +288,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '../stores/characters'
-import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative } from '../utils/yearDisplay'
+import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative, kaienrekiToTenreki, tenrekiToKaienreki } from '../utils/yearDisplay'
 
 const route = useRoute()
 const router = useRouter()
@@ -271,6 +305,39 @@ const birthDateDay = ref(null)
 const deathDateYear = ref(null)
 const deathDateMonth = ref(null)
 const deathDateDay = ref(null)
+
+// Calendar input modes (Kaienreki vs Tenreki)
+const useBirthKaienrekiInput = ref(true)
+const useDeathKaienrekiInput = ref(true)
+
+// Computed properties for displayed years (converts between calendars)
+const displayedBirthYear = computed({
+  get: () => {
+    if (birthDateYear.value == null) return null
+    return useBirthKaienrekiInput.value ? birthDateYear.value : kaienrekiToTenreki(birthDateYear.value)
+  },
+  set: (val) => {
+    if (val == null) {
+      birthDateYear.value = null
+    } else {
+      birthDateYear.value = useBirthKaienrekiInput.value ? val : tenrekiToKaienreki(val)
+    }
+  }
+})
+
+const displayedDeathYear = computed({
+  get: () => {
+    if (deathDateYear.value == null) return null
+    return useDeathKaienrekiInput.value ? deathDateYear.value : kaienrekiToTenreki(deathDateYear.value)
+  },
+  set: (val) => {
+    if (val == null) {
+      deathDateYear.value = null
+    } else {
+      deathDateYear.value = useDeathKaienrekiInput.value ? val : tenrekiToKaienreki(val)
+    }
+  }
+})
 
 // Birth date relative year input mode
 const useBirthRelativeYearInput = ref(false)
