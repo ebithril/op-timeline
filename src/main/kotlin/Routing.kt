@@ -8,10 +8,19 @@ import com.routes.sagaRoutes
 import com.routes.userRoutes
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
+import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import io.ktor.util.*
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 
 fun Application.configureRouting() {
     routing {
+	// Prometheus metrics endpoint
+	get("/metrics") {
+	    val registry = application.attributes[AttributeKey<PrometheusMeterRegistry>("prometheus.registry")]
+	    call.respondText(registry.scrape())
+	}
+
 	// Serve frontend files from static/dist
 	staticResources("/", "static/dist")
 
