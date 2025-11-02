@@ -64,6 +64,21 @@
       <div v-if="eventData.dateType !== 'Relative'" class="mb-6">
         <label class="block text-sm font-semibold mb-2">Date</label>
 
+        <!-- Toggle for calendar input mode -->
+        <div class="mb-3">
+          <label class="flex items-center gap-2">
+            <input
+              v-model="useKaienrekiInput"
+              type="checkbox"
+              class="rounded"
+            />
+            <span class="text-sm font-semibold">Use Kaienreki (default)</span>
+          </label>
+          <p class="text-xs text-gray-600 mt-1 ml-6">
+            Uncheck to input years in Tenreki (Sky Calendar, +2600 years)
+          </p>
+        </div>
+
         <!-- Toggle for relative year input -->
         <div class="mb-3">
           <label class="flex items-center gap-2">
@@ -103,13 +118,17 @@
                 = Year {{ calculatedAbsoluteYear }}
               </p>
             </div>
-            <input
-              v-else
-              v-model.number="exactDateYear"
-              type="number"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="e.g., 1500"
-            />
+            <div v-else>
+              <input
+                v-model.number="displayedYear"
+                type="number"
+                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+                :placeholder="useKaienrekiInput ? 'e.g., 1500' : 'e.g., 4100'"
+              />
+              <p v-if="!useKaienrekiInput && exactDateYear != null" class="text-xs text-gray-500 mt-1">
+                Kaienreki: {{ exactDateYear }}
+              </p>
+            </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Month (optional)</label>
@@ -579,7 +598,7 @@ import { useEventsStore } from '../stores/events'
 import { useCharactersStore } from '../stores/characters'
 import { useArcsStore } from '../stores/arcs'
 import { useLocationsStore } from '../stores/locations'
-import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative } from '../utils/yearDisplay'
+import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative, kaienrekiToTenreki, tenrekiToKaienreki } from '../utils/yearDisplay'
 
 const route = useRoute()
 const router = useRouter()
@@ -597,6 +616,24 @@ const error = ref(null)
 const exactDateYear = ref(null)
 const exactDateMonth = ref(null)
 const exactDateDay = ref(null)
+
+// Calendar input mode (Kaienreki vs Tenreki)
+const useKaienrekiInput = ref(true)
+
+// Computed property for displayed year (converts between calendars)
+const displayedYear = computed({
+  get: () => {
+    if (exactDateYear.value == null) return null
+    return useKaienrekiInput.value ? exactDateYear.value : kaienrekiToTenreki(exactDateYear.value)
+  },
+  set: (val) => {
+    if (val == null) {
+      exactDateYear.value = null
+    } else {
+      exactDateYear.value = useKaienrekiInput.value ? val : tenrekiToKaienreki(val)
+    }
+  }
+})
 
 // Relative year input mode
 const useRelativeYearInput = ref(false)

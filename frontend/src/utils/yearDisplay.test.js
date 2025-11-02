@@ -2,10 +2,13 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   SERIES_START_YEAR,
   TIMESKIP_END_YEAR,
+  TENREKI_OFFSET,
   DisplayMode,
   displayModeLabels,
   absoluteToRelative,
   relativeToAbsolute,
+  kaienrekiToTenreki,
+  tenrekiToKaienreki,
   formatYearDisplay,
   formatFullDateDisplay,
   getDisplayModePreference,
@@ -21,16 +24,22 @@ describe('yearDisplay constants', () => {
     expect(TIMESKIP_END_YEAR).toBe(1541)
   })
 
+  it('TENREKI_OFFSET should be 2600', () => {
+    expect(TENREKI_OFFSET).toBe(2600)
+  })
+
   it('DisplayMode should have correct values', () => {
     expect(DisplayMode.KAIENREKI).toBe('kaienreki')
     expect(DisplayMode.SERIES_START).toBe('seriesStart')
     expect(DisplayMode.TIMESKIP_END).toBe('timeskipEnd')
+    expect(DisplayMode.TENREKI).toBe('tenreki')
   })
 
   it('displayModeLabels should have all modes', () => {
     expect(displayModeLabels[DisplayMode.KAIENREKI]).toBeDefined()
     expect(displayModeLabels[DisplayMode.SERIES_START]).toBeDefined()
     expect(displayModeLabels[DisplayMode.TIMESKIP_END]).toBeDefined()
+    expect(displayModeLabels[DisplayMode.TENREKI]).toBeDefined()
   })
 })
 
@@ -112,6 +121,51 @@ describe('absoluteToRelative and relativeToAbsolute round trip', () => {
   })
 })
 
+describe('kaienrekiToTenreki', () => {
+  it('converts Kaienreki 1539 to Tenreki 4139', () => {
+    expect(kaienrekiToTenreki(1539)).toBe(4139)
+  })
+
+  it('converts Kaienreki 1541 to Tenreki 4141', () => {
+    expect(kaienrekiToTenreki(1541)).toBe(4141)
+  })
+
+  it('converts Kaienreki 1500 to Tenreki 4100', () => {
+    expect(kaienrekiToTenreki(1500)).toBe(4100)
+  })
+
+  it('returns null for null input', () => {
+    expect(kaienrekiToTenreki(null)).toBeNull()
+  })
+})
+
+describe('tenrekiToKaienreki', () => {
+  it('converts Tenreki 4139 to Kaienreki 1539', () => {
+    expect(tenrekiToKaienreki(4139)).toBe(1539)
+  })
+
+  it('converts Tenreki 4141 to Kaienreki 1541', () => {
+    expect(tenrekiToKaienreki(4141)).toBe(1541)
+  })
+
+  it('converts Tenreki 4100 to Kaienreki 1500', () => {
+    expect(tenrekiToKaienreki(4100)).toBe(1500)
+  })
+
+  it('returns null for null input', () => {
+    expect(tenrekiToKaienreki(null)).toBeNull()
+  })
+})
+
+describe('Tenreki round trip', () => {
+  it('round trip conversion preserves value', () => {
+    const kaienreki = 1539
+    const tenreki = kaienrekiToTenreki(kaienreki)
+    const backToKaienreki = tenrekiToKaienreki(tenreki)
+    expect(backToKaienreki).toBe(kaienreki)
+  })
+})
+
 describe('formatYearDisplay', () => {
   describe('KAIENREKI mode', () => {
     it('formats year as string', () => {
@@ -164,6 +218,24 @@ describe('formatYearDisplay', () => {
 
     it('returns Unknown for null', () => {
       expect(formatYearDisplay(null, DisplayMode.TIMESKIP_END)).toBe('Unknown')
+    })
+  })
+
+  describe('TENREKI mode', () => {
+    it('formats Kaienreki 1539 as Tenreki 4139', () => {
+      expect(formatYearDisplay(1539, DisplayMode.TENREKI)).toBe('4139')
+    })
+
+    it('formats Kaienreki 1541 as Tenreki 4141', () => {
+      expect(formatYearDisplay(1541, DisplayMode.TENREKI)).toBe('4141')
+    })
+
+    it('formats Kaienreki 1500 as Tenreki 4100', () => {
+      expect(formatYearDisplay(1500, DisplayMode.TENREKI)).toBe('4100')
+    })
+
+    it('returns Unknown for null', () => {
+      expect(formatYearDisplay(null, DisplayMode.TENREKI)).toBe('Unknown')
     })
   })
 
