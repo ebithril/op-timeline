@@ -131,6 +131,28 @@ object TestData {
         order = order
     )
 
+    fun createEra(
+        id: String = ObjectId().toHexString(),
+        name: String = "Test Era",
+        description: String? = null,
+        startDate: ExactDate = ExactDate(year = 1500, month = 1, day = 1),
+        endDate: ExactDate = ExactDate(year = 1520, month = 12, day = 31),
+        createdAt: Long = System.currentTimeMillis(),
+        createdBy: String? = "testuser",
+        updatedAt: Long = System.currentTimeMillis(),
+        updatedBy: String? = "testuser"
+    ) = Era(
+        _id = ObjectId(id),
+        name = name,
+        description = description,
+        startDate = startDate,
+        endDate = endDate,
+        createdAt = createdAt,
+        createdBy = createdBy,
+        updatedAt = updatedAt,
+        updatedBy = updatedBy
+    )
+
     fun createLocation(
         id: String = ObjectId().toHexString(),
         name: String = "Test Location",

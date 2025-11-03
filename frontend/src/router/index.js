@@ -11,6 +11,8 @@ import SagasView from '../views/SagasView.vue'
 import SagaEditView from '../views/SagaEditView.vue'
 import ArcsView from '../views/ArcsView.vue'
 import ArcEditView from '../views/ArcEditView.vue'
+import ErasView from '../views/ErasView.vue'
+import EraEditView from '../views/EraEditView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -94,6 +96,16 @@ const router = createRouter({
       path: '/arcs/:id',
       name: 'arc-edit',
       component: ArcEditView,
+    },
+    {
+      path: '/eras',
+      name: 'eras',
+      component: ErasView,
+    },
+    {
+      path: '/eras/:id',
+      name: 'era-edit',
+      component: EraEditView,
     },
   ],
 })

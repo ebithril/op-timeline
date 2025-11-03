@@ -88,6 +88,20 @@ class EventRepository {
 		).toList()
 	}
 
+	suspend fun findByDateRange(startDate: com.model.ExactDate, endDate: com.model.ExactDate): List<Event> {
+		val startAbsoluteDate = DateCalculator.exactDateToDays(startDate)
+		val endAbsoluteDate = DateCalculator.exactDateToDays(endDate)
+
+		return eventsCollection.find(
+			Filters.and(
+				Filters.gte("calculatedAbsoluteDate", startAbsoluteDate),
+				Filters.lte("calculatedAbsoluteDate", endAbsoluteDate),
+				Filters.eq("isDeleted", false)
+			)
+		).sort(Sorts.ascending("calculatedAbsoluteDate", "displayYear", "createdAt"))
+		.toList()
+	}
+
 	suspend fun create(event: Event, username: String): Event {
 		// If has parent, inherit arcId from parent if not explicitly set
 		val effectiveArcId = if (event.parentEventId != null && event.arcId == null) {
