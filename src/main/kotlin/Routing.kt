@@ -2,6 +2,7 @@ package com
 
 import com.routes.arcRoutes
 import com.routes.characterRoutes
+import com.routes.eraRoutes
 import com.routes.eventRoutes
 import com.routes.locationRoutes
 import com.routes.sagaRoutes
@@ -30,6 +31,7 @@ fun Application.configureRouting() {
 	locationRoutes()
 	arcRoutes()
 	sagaRoutes()
+	eraRoutes()
 	userRoutes()
     }
 }
