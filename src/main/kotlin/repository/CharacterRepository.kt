@@ -43,6 +43,7 @@ class CharacterRepository(private val eventRepository: EventRepository) {
 		val characterWithDates = updateCharacterWithCalculatedDates(character)
 
 		val newCharacter = characterWithDates.copy(
+			_id = ObjectId(),
 			createdAt = System.currentTimeMillis(),
 			createdBy = username,
 			updatedAt = System.currentTimeMillis(),

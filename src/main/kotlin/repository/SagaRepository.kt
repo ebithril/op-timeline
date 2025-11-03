@@ -29,6 +29,7 @@ class SagaRepository {
 
 	suspend fun create(saga: Saga, username: String): Saga {
 		val newSaga = saga.copy(
+			_id = ObjectId(),
 			createdAt = System.currentTimeMillis(),
 			createdBy = username,
 			updatedAt = System.currentTimeMillis(),

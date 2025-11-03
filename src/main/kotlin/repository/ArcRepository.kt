@@ -40,6 +40,7 @@ class ArcRepository {
 
 	suspend fun create(arc: Arc, username: String): Arc {
 		val newArc = arc.copy(
+			_id = ObjectId(),
 			createdAt = System.currentTimeMillis(),
 			createdBy = username,
 			updatedAt = System.currentTimeMillis(),
