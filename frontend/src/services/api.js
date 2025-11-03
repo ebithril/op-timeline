@@ -67,6 +67,16 @@ export const sagasAPI = {
   delete: (id) => apiClient.delete(`/api/sagas/${id}`),
 }
 
+// Eras API
+export const erasAPI = {
+  getAll: () => apiClient.get('/api/eras'),
+  getById: (id) => apiClient.get(`/api/eras/${id}`),
+  getTimeline: (id) => apiClient.get(`/api/eras/${id}/timeline`),
+  create: (era) => apiClient.post('/api/eras', era),
+  update: (id, era) => apiClient.put(`/api/eras/${id}`, era),
+  delete: (id) => apiClient.delete(`/api/eras/${id}`),
+}
+
 // Locations API
 export const locationsAPI = {
   getAll: () => apiClient.get('/api/locations'),
