@@ -5,6 +5,7 @@ import com.model.Era
 import com.mongodb.client.model.Filters
 import com.mongodb.client.model.Sorts
 import com.mongodb.kotlin.client.coroutine.MongoCollection
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.toList
 import org.bson.types.ObjectId
 
@@ -24,11 +25,12 @@ class EraRepository {
 		} catch (e: Exception) {
 			return null
 		}
-		return erasCollection.find(Filters.eq("_id", objectId)).toList().firstOrNull()
+		return erasCollection.find(Filters.eq("_id", objectId)).firstOrNull()
 	}
 
 	suspend fun create(era: Era, username: String): Era {
 		val newEra = era.copy(
+			_id = ObjectId(),
 			createdAt = System.currentTimeMillis(),
 			createdBy = username,
 			updatedAt = System.currentTimeMillis(),
