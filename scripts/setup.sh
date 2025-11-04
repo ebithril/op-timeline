@@ -161,16 +161,20 @@ fi
 
 # Wait for MongoDB to be ready
 print_info "Waiting for MongoDB to be ready..."
-sleep 10
+sleep 5
 
-# Check if MongoDB is healthy
+# Wait for healthy status
+for i in {1..30}; do
 if docker-compose ps mongodb | grep -q "healthy"; then
-    print_success "MongoDB is ready and healthy"
-else
-    print_warning "MongoDB may still be initializing..."
-    print_info "Waiting a bit longer..."
-    sleep 10
+    print_success "MongoDB is ready"
+    break
 fi
+if [ $i -eq 30 ]; then
+    print_error "MongoDB failed to start"
+    exit 1
+fi
+sleep 1
+done
 
 echo ""
 echo "=========================================="
