@@ -53,7 +53,7 @@ echo "  The database will be reset to the initial sample data."
 echo ""
 read -p "Are you sure you want to continue? (yes/no): " confirm
 
-if [ "$confirm" != "yes" ]; then
+if [[ ! "$confirm" =~ ^[yY]([eE][sS])?$ ]]; then
     echo ""
     print_info "Database reset cancelled"
     exit 0
