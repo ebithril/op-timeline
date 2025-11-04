@@ -107,6 +107,9 @@ print_info "Running: ./gradlew run --continuous"
 MONGODB_URI="mongodb://localhost:27017" ./gradlew run --continuous > logs/backend.log 2>&1 &
 BACKEND_PID=$!
 
+# Create logs directory if it doesn't exist
+mkdir -p logs
+
 print_success "Backend starting... (PID: $BACKEND_PID)"
 print_info "Logs: logs/backend.log"
 
@@ -116,9 +119,6 @@ sleep 5
 echo ""
 print_header "Starting frontend dev server..."
 echo ""
-
-# Create logs directory if it doesn't exist
-mkdir -p logs
 
 # Start frontend in background
 print_info "Running: npm run dev (in frontend/)"
