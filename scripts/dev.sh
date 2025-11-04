@@ -113,8 +113,20 @@ mkdir -p logs
 print_success "Backend starting... (PID: $BACKEND_PID)"
 print_info "Logs: logs/backend.log"
 
-# Wait a bit for backend to start
-sleep 5
+# Wait for backend to be ready on port 8080
+print_info "Waiting for backend to be ready..."
+for i in {1..30}; do
+    if nc -z localhost 8080; then
+        print_success "Backend is ready"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        print_error "Backend failed to start"
+        tail -n 50 logs/backend.log
+        exit 1
+    fi
+    sleep 1
+done
 
 echo ""
 print_header "Starting frontend dev server..."
@@ -130,8 +142,20 @@ cd ..
 print_success "Frontend starting... (PID: $FRONTEND_PID)"
 print_info "Logs: logs/frontend.log"
 
-# Wait a bit for frontend to start
-sleep 5
+# Wait for frontend to be ready on port 3000
+print_info "Waiting for backend to be ready..."
+for i in {1..30}; do
+    if nc -z localhost 3000; then
+        print_success "Frontend is ready"
+        break
+    fi
+    if [ $i -eq 30 ]; then
+        print_error "Frontend failed to start"
+        tail -n 50 logs/frontend.log
+        exit 1
+    fi
+    sleep 1
+done
 
 echo ""
 print_header "=========================================="
