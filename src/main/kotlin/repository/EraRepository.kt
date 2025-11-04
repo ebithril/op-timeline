@@ -29,11 +29,12 @@ class EraRepository {
 	}
 
 	suspend fun create(era: Era, username: String): Era {
+		val timestamp = System.currentTimeMillis()
 		val newEra = era.copy(
 			_id = ObjectId(),
-			createdAt = System.currentTimeMillis(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username
 		)
 		erasCollection.insertOne(newEra)

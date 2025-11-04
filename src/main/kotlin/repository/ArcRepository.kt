@@ -39,10 +39,12 @@ class ArcRepository {
 	}
 
 	suspend fun create(arc: Arc, username: String): Arc {
+		val timestamp = System.currentTimeMillis()
 		val newArc = arc.copy(
-			createdAt = System.currentTimeMillis(),
+			_id = ObjectId(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username
 		)
 		arcsCollection.insertOne(newArc)

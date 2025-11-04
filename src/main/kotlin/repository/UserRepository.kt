@@ -43,6 +43,7 @@ class UserRepository {
 	suspend fun create(username: String, role: UserRole): User {
 		val apiKey = generateApiKey()
 		val user = User(
+			_id = ObjectId(),
 			username = username,
 			apiKey = apiKey,
 			role = role,
