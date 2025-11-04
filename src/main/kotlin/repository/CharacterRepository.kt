@@ -42,11 +42,12 @@ class CharacterRepository(private val eventRepository: EventRepository) {
 		// Calculate birth and death dates before creating
 		val characterWithDates = updateCharacterWithCalculatedDates(character)
 
+		val timestamp = System.currentTimeMillis()
 		val newCharacter = characterWithDates.copy(
 			_id = ObjectId(),
-			createdAt = System.currentTimeMillis(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username
 		)
 		charactersCollection.insertOne(newCharacter)

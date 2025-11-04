@@ -15,6 +15,32 @@ A collaborative wiki-style timeline for tracking events in the One Piece manga, 
 - **Wiki-Style Editing**: Changes go live immediately with full audit trail
 - **REST API**: Complete API for programmatic access
 
+## 🚀 Quick Start (Recommended)
+
+The fastest way to get started with local development:
+
+```bash
+# 1. One-time setup (installs dependencies, starts MongoDB, seeds data)
+./scripts/setup.sh
+
+# 2. Start development servers (backend + frontend + MongoDB)
+./scripts/dev.sh
+```
+
+**That's it!** Open http://localhost:3000 and start developing.
+
+**Development API Keys** (auto-created):
+- **Admin**: `dev-admin-key-CHANGE-IN-PRODUCTION` (full access)
+- **Editor**: `dev-editor-key-CHANGE-IN-PRODUCTION` (create/edit)
+- **Viewer**: `dev-viewer-key-CHANGE-IN-PRODUCTION` (read-only)
+
+**Useful commands**:
+- `./scripts/reset-db.sh` - Reset database to initial sample data
+- `docker-compose down` - Stop MongoDB
+- `docker-compose logs -f mongodb` - View MongoDB logs
+
+> **Note**: This uses Docker Compose for MongoDB. For manual setup without Docker, see the [Manual Setup](#manual-setup-without-docker) section below.
+
 ## Technology Stack
 
 ### Backend
@@ -31,12 +57,18 @@ A collaborative wiki-style timeline for tracking events in the One Piece manga, 
 
 ## Prerequisites
 
+### Quick Start (Docker Compose)
+- **Docker** and **Docker Compose**
 - **JDK 21** or higher
-- **MongoDB** 4.4 or higher
+- **Node.js** 18 or higher
+
+### Manual Setup (Without Docker)
+- **JDK 21** or higher
+- **MongoDB** 4.4 or higher (installed locally)
 - **Node.js** 18 or higher (for frontend development)
 - **Gradle** (included via wrapper)
 
-## Setup Instructions
+## Manual Setup (Without Docker)
 
 ### 1. MongoDB Setup
 
