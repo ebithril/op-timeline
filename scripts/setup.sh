@@ -13,6 +13,7 @@ echo ""
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Function to check if a command exists
@@ -34,7 +35,7 @@ print_warning() {
 }
 
 print_info() {
-    echo -e "${NC}→${NC} $1"
+    echo -e "${BLUE}→${NC} $1"
 }
 
 echo "Step 1: Checking prerequisites..."
