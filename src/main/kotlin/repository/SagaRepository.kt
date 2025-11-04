@@ -28,11 +28,12 @@ class SagaRepository {
 	}
 
 	suspend fun create(saga: Saga, username: String): Saga {
+		val timestamp = System.currentTimeMillis()
 		val newSaga = saga.copy(
 			_id = ObjectId(),
-			createdAt = System.currentTimeMillis(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username
 		)
 		sagasCollection.insertOne(newSaga)

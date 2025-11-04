@@ -116,12 +116,13 @@ class EventRepository {
 		val calculatedExactDate = DateCalculator.calculateExactDate(event, this)
 		val displayYear = event.exactDate?.year ?: calculatedExactDate?.year ?: absoluteDate?.let { (it / 365.0).toInt() }
 
+		val timestamp = System.currentTimeMillis()
 		val newEvent = event.copy(
 			_id = ObjectId(),
 			arcId = effectiveArcId,
-			createdAt = System.currentTimeMillis(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username,
 			version = 1,
 			calculatedAbsoluteDate = absoluteDate,

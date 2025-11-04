@@ -103,11 +103,12 @@ class LocationRepository {
 			}
 		}
 
+		val timestamp = System.currentTimeMillis()
 		val newLocation = location.copy(
 			_id = ObjectId(),
-			createdAt = System.currentTimeMillis(),
+			createdAt = timestamp,
 			createdBy = username,
-			updatedAt = System.currentTimeMillis(),
+			updatedAt = timestamp,
 			updatedBy = username
 		)
 		locationsCollection.insertOne(newLocation)
