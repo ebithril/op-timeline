@@ -43,6 +43,10 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
 
+    // OpenAPI/Swagger
+    implementation("io.ktor:ktor-server-openapi")
+    implementation("io.ktor:ktor-server-swagger-ui")
+
     // Testing dependencies
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")

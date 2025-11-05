@@ -155,70 +155,9 @@ Production build outputs to `src/main/resources/static/dist/`.
 
 ## API Documentation
 
-### Authentication
+The API provides REST endpoints for managing events, characters, and users. All write operations require authentication via API key in the `X-API-Key` header.
 
-All write operations require authentication via API key in the `X-API-Key` header:
-
-```bash
-curl -H "X-API-Key: your-api-key-here" http://localhost:8080/api/events
-```
-
-### Events Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/events` | Public | Get all events |
-| GET | `/api/events/{id}` | Public | Get event by ID |
-| GET | `/api/events/character/{name}` | Public | Get events by character |
-| POST | `/api/events` | Editor/Admin | Create new event |
-| PUT | `/api/events/{id}` | Editor/Admin | Update event |
-| DELETE | `/api/events/{id}` | Admin | Soft delete event |
-| GET | `/api/events/{id}/history` | Public | Get version history |
-| POST | `/api/events/{id}/revert/{version}` | Admin | Revert to version |
-
-### Characters Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/characters` | Public | Get all characters |
-| GET | `/api/characters/{id}` | Public | Get character by ID |
-| GET | `/api/characters/search/{query}` | Public | Search characters |
-| GET | `/api/characters/alive-at/{date}` | Public | Get characters alive at date |
-| POST | `/api/characters` | Editor/Admin | Create character |
-| PUT | `/api/characters/{id}` | Editor/Admin | Update character |
-| DELETE | `/api/characters/{id}` | Admin | Delete character |
-
-### Users Endpoints
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/users/me` | Any | Get current user info |
-| GET | `/api/users` | Admin | Get all users |
-| POST | `/api/users` | Admin | Create new user |
-| PUT | `/api/users/{id}/role` | Admin | Update user role |
-| DELETE | `/api/users/{id}` | Admin | Deactivate user |
-
-### Example Event Creation
-
-```bash
-curl -X POST http://localhost:8080/api/events \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-api-key" \
-  -d '{
-    "name": "Luffy Leaves Dawn Island",
-    "type": "Event",
-    "description": "Luffy sets sail from his home village to begin his pirate adventure",
-    "dateType": "Exact",
-    "exactDate": 1539,
-    "chapter": 1,
-    "involvedCharacters": ["Monkey D. Luffy"],
-    "sources": [{
-      "citation": "Romance Dawn - Chapter 1",
-      "chapter": 1,
-      "page": 1
-    }]
-  }'
-```
+For complete API documentation with interactive examples, visit the **Swagger UI** at http://localhost:8080/swagger-ui once the backend is running.
 
 ## User Roles
 
@@ -226,161 +165,27 @@ curl -X POST http://localhost:8080/api/events \
 - **Editor**: Can create and edit events and characters
 - **Admin**: Full access including delete, revert, and user management
 
-## Creating Additional Users
-
-Admins can create new users via the API:
-
-```bash
-curl -X POST http://localhost:8080/api/users \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: admin-api-key" \
-  -d '{
-    "username": "editor1",
-    "role": "Editor"
-  }'
-```
-
-The response will include the generated API key for the new user.
+Admins can create additional users via the API (see Swagger UI for details).
 
 ## Testing
 
-The project has a comprehensive test suite with 210+ tests covering both backend and frontend:
+The project has comprehensive test coverage for both backend and frontend.
 
-### Backend Tests (49 tests)
-- DateCalculator utility tests
-- CharacterDateCalculator utility tests
-- Test data builders for all models
-
+### Backend Tests
 ```bash
-# Run backend unit tests
-./gradlew test --tests DateCalculatorTest --tests CharacterDateCalculatorTest
-
-# View test report
-open build/reports/tests/test/index.html
+./gradlew test
 ```
 
-### Frontend Tests (161 tests)
-- yearDisplay utility tests (54 tests)
-- Pinia store tests for all stores (107 tests)
-- High coverage with Vitest and Vue Test Utils
-
+### Frontend Tests
 ```bash
 cd frontend
-
-# Run all tests once
-npm test
-
-# Run tests in watch mode
-npm run test:watch
-
-# Generate coverage report
-npm run test:coverage
-open coverage/index.html
+npm test                # Run tests once
+npm run test:watch      # Watch mode
+npm run test:coverage   # Generate coverage report
 ```
-
-### Coverage Targets
-- Lines: 85%
-- Functions: 85%
-- Branches: 80%
-- Statements: 85%
 
 For detailed testing documentation, see [TESTING.md](./TESTING.md).
 
-## CI/CD Pipeline
-
-The project uses GitHub Actions for continuous integration:
-
-- ✅ Automated testing on every push and PR
-- ✅ Backend tests with JDK 21
-- ✅ Frontend tests with coverage reporting
-- ✅ Build verification for both backend and frontend
-- ✅ Artifact uploads (JARs, coverage reports)
-
-See `.github/workflows/ci.yml` for the complete pipeline configuration.
-
-## Development Workflow
-
-### Backend Development
-
-```bash
-# Run with auto-reload
-./gradlew run --continuous
-
-# Run tests
-./gradlew test
-
-# Run specific tests
-./gradlew test --tests DateCalculatorTest
-
-# Build production JAR
-./gradlew buildFatJar
-```
-
-### Frontend Development
-
-```bash
-cd frontend
-
-# Development server with hot reload
-npm run dev
-
-# Run tests in watch mode
-npm run test:watch
-
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-```
-
-## Project Structure
-
-```
-.
-├── src/main/kotlin/
-│   ├── config/
-│   │   └── DatabaseConfig.kt         # MongoDB configuration
-│   ├── model/
-│   │   ├── Event.kt                  # Event data model
-│   │   ├── EventVersion.kt           # Version history model
-│   │   ├── Character.kt              # Character model
-│   │   ├── User.kt                   # User model
-│   │   └── Source.kt                 # Source citation model
-│   ├── repository/
-│   │   ├── EventRepository.kt        # Event data access
-│   │   ├── CharacterRepository.kt    # Character data access
-│   │   └── UserRepository.kt         # User data access
-│   ├── middleware/
-│   │   └── AuthMiddleware.kt         # API key authentication
-│   ├── routes/
-│   │   ├── EventRoutes.kt            # Event API endpoints
-│   │   ├── CharacterRoutes.kt        # Character API endpoints
-│   │   └── UserRoutes.kt             # User API endpoints
-│   ├── Application.kt                # Main application
-│   ├── Routing.kt                    # Route configuration
-│   └── Serialization.kt              # JSON serialization
-├── frontend/
-│   ├── src/
-│   │   ├── components/               # Reusable Vue components
-│   │   ├── views/
-│   │   │   ├── TimelineView.vue      # Main timeline page
-│   │   │   ├── EventDetailView.vue   # Event detail with history
-│   │   │   └── EventEditView.vue     # Create/edit event form
-│   │   ├── stores/
-│   │   │   ├── auth.js               # Authentication state
-│   │   │   ├── events.js             # Events state
-│   │   │   └── characters.js         # Characters state
-│   │   ├── services/
-│   │   │   └── api.js                # API client
-│   │   ├── router/
-│   │   │   └── index.js              # Vue Router config
-│   │   ├── App.vue                   # Root component
-│   │   └── main.js                   # App entry point
-│   ├── package.json
-│   └── vite.config.js
-└── build.gradle.kts
-```
 
 ## License
 
