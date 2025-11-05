@@ -13,6 +13,7 @@ import ArcsView from '../views/ArcsView.vue'
 import ArcEditView from '../views/ArcEditView.vue'
 import ErasView from '../views/ErasView.vue'
 import EraEditView from '../views/EraEditView.vue'
+import AdminUsersView from '../views/AdminUsersView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -106,6 +107,11 @@ const router = createRouter({
       path: '/eras/:id',
       name: 'era-edit',
       component: EraEditView,
+    },
+    {
+      path: '/admin/users',
+      name: 'admin-users',
+      component: AdminUsersView,
     },
   ],
 })

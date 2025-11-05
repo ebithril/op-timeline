@@ -25,6 +25,7 @@ data class UpdateRoleRequest(
 
 @Serializable
 data class UserResponse(
+	val _id: String? = null,
 	val username: String,
 	val role: UserRole,
 	val apiKey: String? = null,
@@ -43,6 +44,7 @@ fun Route.userRoutes() {
 
 			try {
 				val response = UserResponse(
+					_id = user._id?.toHexString(),
 					username = user.username,
 					role = user.role,
 					createdAt = user.createdAt,
@@ -70,6 +72,7 @@ fun Route.userRoutes() {
 
 				val newUser = userRepository.create(request.username, request.role)
 				val response = UserResponse(
+					_id = newUser._id?.toHexString(),
 					username = newUser.username,
 					role = newUser.role,
 					apiKey = newUser.apiKey,
@@ -90,6 +93,7 @@ fun Route.userRoutes() {
 				val users = userRepository.findAll()
 				val responses = users.map { u ->
 					UserResponse(
+						_id = u._id?.toHexString(),
 						username = u.username,
 						role = u.role,
 						createdAt = u.createdAt,
@@ -118,6 +122,7 @@ fun Route.userRoutes() {
 					call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
 				} else {
 					val response = UserResponse(
+						_id = updatedUser._id?.toHexString(),
 						username = updatedUser.username,
 						role = updatedUser.role,
 						createdAt = updatedUser.createdAt,

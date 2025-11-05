@@ -44,6 +44,14 @@
             </router-link>
 
             <router-link
+              v-if="authStore.isAdmin"
+              to="/admin/users"
+              class="text-white hover:text-gray-200"
+            >
+              Admin
+            </router-link>
+
+            <router-link
               v-if="authStore.isEditor"
               to="/event/new"
               class="bg-white text-one-piece-primary px-4 py-2 rounded hover:bg-gray-100"
