@@ -53,93 +53,107 @@
       {{ eventsStore.error }}
     </div>
 
-    <!-- Vertical Timeline -->
-    <div v-else class="vertical-timeline-container">
+    <!-- New Timeline Layout: Date on left, events in middle -->
+    <div v-else class="timeline-container">
       <div v-if="filteredEvents.length === 0" class="text-center py-8 text-gray-600">
         No events found. Add some events to get started!
       </div>
 
-      <div v-else class="relative max-w-5xl mx-auto">
-        <!-- Vertical Timeline Line -->
-        <div class="absolute left-1/2 top-0 bottom-0 w-1 bg-one-piece-primary transform -translate-x-1/2"></div>
+      <div v-else class="max-w-6xl mx-auto py-8">
+        <!-- Era Sections -->
+        <div v-for="(eraData, eraIndex) in groupedByEra" :key="eraIndex" class="mb-12">
+          <!-- Era Header (if era exists) -->
+          <div v-if="eraData.era" class="mb-6 pb-4 border-b-4 border-one-piece-primary">
+            <h2 class="text-2xl font-bold text-one-piece-dark">{{ eraData.era.name }}</h2>
+            <p v-if="eraData.era.description" class="text-gray-600 mt-1">{{ eraData.era.description }}</p>
+            <p class="text-sm text-gray-500 mt-1">
+              {{ formatEraDate(eraData.era.startDate) }} - {{ formatEraDate(eraData.era.endDate) }}
+            </p>
+          </div>
 
-        <!-- Events -->
-        <div class="space-y-12 py-8">
-          <div
-            v-for="(event, index) in filteredEvents"
-            :key="event._id"
-            class="relative"
-          >
-            <!-- Timeline Dot -->
-            <div class="absolute left-1/2 w-6 h-6 bg-one-piece-primary rounded-full border-4 border-white transform -translate-x-1/2 shadow-lg z-10"></div>
-
-            <!-- Event Card - Alternating left and right -->
+          <!-- Timeline Events in this era -->
+          <div class="space-y-6">
             <div
-              class="flex items-center"
-              :class="index % 2 === 0 ? 'flex-row-reverse' : 'flex-row'"
+              v-for="(event, index) in eraData.events"
+              :key="event._id"
+              class="flex gap-6 relative"
             >
-              <!-- Spacer for the other side -->
-              <div class="w-1/2"></div>
+              <!-- Date Column (Left Side) -->
+              <div class="w-48 flex-shrink-0 text-right pr-6 relative">
+                <!-- Vertical Timeline Line -->
+                <div
+                  v-if="index < eraData.events.length - 1 || eraIndex < groupedByEra.length - 1"
+                  class="absolute right-0 top-8 bottom-0 w-0.5 bg-one-piece-primary opacity-30"
+                ></div>
 
-              <!-- Horizontal Connector Line -->
-              <div
-                class="w-8 h-0.5 bg-one-piece-primary"
-                :class="index % 2 === 0 ? 'ml-3' : 'mr-3'"
-              ></div>
-
-              <!-- Event Card Content -->
-              <div
-                class="w-1/2 bg-white p-5 rounded-lg shadow-lg hover:shadow-xl transition-shadow border-2 border-one-piece-primary"
-                :class="index % 2 === 0 ? 'pr-5' : 'pl-5'"
-              >
-                <div class="flex items-center gap-2 mb-2 flex-wrap">
-                  <span
-                    :class="[
-                      'px-2 py-1 text-xs rounded font-semibold',
-                      getEventTypeColor(event.type)
-                    ]"
-                  >
-                    {{ event.type }}
-                  </span>
-                  <span class="text-sm text-gray-500 font-semibold">
-                    {{ formatDate(event) }}
-                  </span>
+                <!-- Date Display -->
+                <div class="relative z-10 inline-block">
+                  <div class="text-2xl font-bold text-one-piece-primary">
+                    {{ getDisplayYear(event) }}
+                  </div>
+                  <div class="text-sm text-gray-600 mt-1">
+                    {{ getDisplayMonthDay(event) }}
+                  </div>
                 </div>
 
-                <h3 class="text-xl font-bold mb-2 text-one-piece-dark">
-                  <router-link
-                    :to="`/event/${event._id}`"
-                    class="hover:text-one-piece-primary"
-                  >
-                    {{ event.name }}
-                  </router-link>
-                </h3>
+                <!-- Timeline Dot -->
+                <div class="absolute right-0 top-3 w-3 h-3 bg-one-piece-primary rounded-full border-2 border-white shadow-lg transform translate-x-1/2"></div>
+              </div>
 
-                <p class="text-sm text-gray-700 mb-3 line-clamp-4">{{ event.description }}</p>
+              <!-- Event Content (Center/Right Side) -->
+              <div class="flex-1">
+                <div class="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-one-piece-primary">
+                  <!-- Event Type Badge -->
+                  <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span
+                      :class="[
+                        'px-2 py-1 text-xs rounded font-semibold',
+                        getEventTypeColor(event.type)
+                      ]"
+                    >
+                      {{ event.type }}
+                    </span>
+                  </div>
 
-                <div v-if="event.involvedCharacters.length > 0" class="mb-3">
-                  <span class="text-xs font-semibold text-gray-600">Characters: </span>
-                  <span class="text-xs text-gray-600">
-                    {{ event.involvedCharacters.slice(0, 3).join(', ') }}
-                    <span v-if="event.involvedCharacters.length > 3">...</span>
-                  </span>
-                </div>
+                  <!-- Event Title -->
+                  <h3 class="text-xl font-bold mb-2 text-one-piece-dark">
+                    <router-link
+                      :to="`/event/${event._id}`"
+                      class="hover:text-one-piece-primary transition-colors"
+                    >
+                      {{ event.name }}
+                    </router-link>
+                  </h3>
 
-                <div class="flex gap-2 mt-3">
-                  <router-link
-                    v-if="authStore.isEditor"
-                    :to="`/event/${event._id}/edit`"
-                    class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                  >
-                    Edit
-                  </router-link>
-                  <button
-                    v-if="authStore.isAdmin"
-                    @click="deleteEvent(event._id)"
-                    class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
-                  >
-                    Delete
-                  </button>
+                  <!-- Event Description -->
+                  <p class="text-sm text-gray-700 mb-3 line-clamp-4">{{ event.description }}</p>
+
+                  <!-- Characters -->
+                  <div v-if="event.involvedCharacters.length > 0" class="mb-3">
+                    <span class="text-xs font-semibold text-gray-600">Characters: </span>
+                    <span class="text-xs text-gray-600">
+                      {{ event.involvedCharacters.slice(0, 3).join(', ') }}
+                      <span v-if="event.involvedCharacters.length > 3">...</span>
+                    </span>
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="flex gap-2 mt-3">
+                    <router-link
+                      v-if="authStore.isEditor"
+                      :to="`/event/${event._id}/edit`"
+                      class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm transition-colors"
+                    >
+                      Edit
+                    </router-link>
+                    <button
+                      v-if="authStore.isAdmin"
+                      @click="deleteEvent(event._id)"
+                      class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm transition-colors"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -154,6 +168,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useEventsStore } from '../stores/events'
 import { useCharactersStore } from '../stores/characters'
+import { useErasStore } from '../stores/eras'
 import { useAuthStore } from '../stores/auth'
 import {
   DisplayMode,
@@ -166,6 +181,7 @@ import {
 
 const eventsStore = useEventsStore()
 const charactersStore = useCharactersStore()
+const erasStore = useErasStore()
 const authStore = useAuthStore()
 
 const selectedCharacters = ref([])
@@ -187,6 +203,71 @@ const filteredEvents = computed(() => {
   )
 })
 
+// Group events by era
+const groupedByEra = computed(() => {
+  const sortedEras = [...erasStore.eras].sort((a, b) => {
+    if (a.startDate.year !== b.startDate.year) {
+      return a.startDate.year - b.startDate.year
+    }
+    const aMonth = a.startDate.month || 0
+    const bMonth = b.startDate.month || 0
+    if (aMonth !== bMonth) {
+      return aMonth - bMonth
+    }
+    const aDay = a.startDate.day || 0
+    const bDay = b.startDate.day || 0
+    return aDay - bDay
+  })
+
+  // Helper to check if event falls within an era
+  const isInEra = (event, era) => {
+    const eventYear = event.displayYear || event.exactDate?.year || event.exactDate
+    if (!eventYear) return false
+
+    const startYear = era.startDate.year
+    const endYear = era.endDate.year
+
+    // Simple year-based check (can be made more precise if needed)
+    return eventYear >= startYear && eventYear <= endYear
+  }
+
+  const result = []
+  const assignedEvents = new Set()
+
+  // Group events by era
+  for (const era of sortedEras) {
+    const eraEvents = filteredEvents.value.filter(event => {
+      if (assignedEvents.has(event._id)) return false
+      if (isInEra(event, era)) {
+        assignedEvents.add(event._id)
+        return true
+      }
+      return false
+    })
+
+    if (eraEvents.length > 0) {
+      result.push({
+        era,
+        events: eraEvents
+      })
+    }
+  }
+
+  // Add remaining events without era
+  const unassignedEvents = filteredEvents.value.filter(
+    event => !assignedEvents.has(event._id)
+  )
+
+  if (unassignedEvents.length > 0) {
+    result.push({
+      era: null,
+      events: unassignedEvents
+    })
+  }
+
+  return result
+})
+
 function toggleCharacterFilter(characterName) {
   const index = selectedCharacters.value.indexOf(characterName)
   if (index === -1) {
@@ -206,6 +287,83 @@ function getEventTypeColor(type) {
     Discovery: 'bg-yellow-200 text-yellow-800',
   }
   return colors[type] || 'bg-gray-200 text-gray-800'
+}
+
+// Get display year for timeline left column
+function getDisplayYear(event) {
+  let year = null
+
+  // Try to get year from various sources
+  if (event.displayYear) {
+    year = event.displayYear
+  } else if (event.calculatedExactDate?.year) {
+    year = event.calculatedExactDate.year
+  } else if (event.exactDate?.year) {
+    year = event.exactDate.year
+  } else if (typeof event.exactDate === 'number') {
+    year = event.exactDate
+  }
+
+  if (!year) {
+    return event.dateType === 'Relative' ? 'Relative' : 'Unknown'
+  }
+
+  // Apply display mode formatting
+  return formatYearDisplay(year, yearDisplayMode.value)
+}
+
+// Get display month/day for timeline left column
+function getDisplayMonthDay(event) {
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ]
+
+  let dateObj = null
+
+  // Try to get full date from various sources
+  if (event.calculatedExactDate && typeof event.calculatedExactDate === 'object') {
+    dateObj = event.calculatedExactDate
+  } else if (event.exactDate && typeof event.exactDate === 'object') {
+    dateObj = event.exactDate
+  }
+
+  if (!dateObj || !dateObj.month) {
+    // For relative dates, show relative info
+    if (event.dateType === 'Relative') {
+      const isVague = event.relativeOffset === null && event.relativeTimeUnit
+      if (isVague) {
+        const unit = event.relativeTimeUnit.toLowerCase()
+        const direction = event.relativeDirection?.toLowerCase() || 'after'
+        return `~${unit} ${direction}`
+      } else if (event.relativeOffset && event.relativeTimeUnit) {
+        const offset = Math.abs(event.relativeOffset)
+        const unit = event.relativeTimeUnit.toLowerCase()
+        const direction = event.relativeOffset < 0 ? 'before' : 'after'
+        return `${offset} ${unit} ${direction}`
+      }
+    } else if (event.dateType === 'Approximation') {
+      return '~Approximate'
+    }
+    return ''
+  }
+
+  const { month, day } = dateObj
+
+  if (day && month) {
+    return `${monthNames[month - 1]} ${day}`
+  } else if (month) {
+    return monthNames[month - 1]
+  }
+
+  return ''
+}
+
+// Format era dates for era headers
+function formatEraDate(date) {
+  if (!date) return 'Unknown'
+  const year = formatYearDisplay(date.year, yearDisplayMode.value)
+  return year
 }
 
 function formatDate(event) {
@@ -324,7 +482,8 @@ async function deleteEvent(id) {
 onMounted(async () => {
   await Promise.all([
     eventsStore.fetchAll(),
-    charactersStore.fetchAll()
+    charactersStore.fetchAll(),
+    erasStore.fetchAll()
   ])
 })
 </script>
