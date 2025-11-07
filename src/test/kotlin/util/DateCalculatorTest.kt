@@ -599,3 +599,339 @@ class DateCalculatorTest {
         result.shouldBeNull()
     }
 }
+
+    // Test Era date calculations
+
+    @Test
+    fun `calculateEraStartDate - exact date`() = runTest {
+        val era = TestData.createEra(
+            startDateType = DateType.Exact,
+            startDate = ExactDate(year = 1400, month = 6, day = 15)
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraStartDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result shouldBeExactly (1400.0 * 365.0 + 5.0 * 30.0 + 14.0)
+    }
+
+    @Test
+    fun `calculateEraStartDate - relative to event`() = runTest {
+        val baseEventId = ObjectId()
+        val baseEvent = TestData.createEvent(
+            id = baseEventId.toHexString(),
+            exactDate = ExactDate(year = 1400, month = 1, day = 1)
+        )
+
+        val era = TestData.createEra(
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEventId = baseEventId,
+            startRelativeOffset = 10,
+            startRelativeTimeUnit = TimeUnit.Years
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEventRepo.findById(baseEventId.toHexString()) } returns baseEvent
+
+        val result = DateCalculator.calculateEraStartDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        val expected = DateCalculator.calculateAbsoluteDate(baseEvent, mockEventRepo)!! + (10.0 * 365.0)
+        result shouldBeExactly expected
+    }
+
+    @Test
+    fun `calculateEraStartDate - relative to another era`() = runTest {
+        val baseEraId = ObjectId()
+        val baseEra = TestData.createEra(
+            id = baseEraId.toHexString(),
+            startDateType = DateType.Exact,
+            startDate = ExactDate(year = 1300, month = 1, day = 1)
+        )
+
+        val era = TestData.createEra(
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEraId = baseEraId,
+            startRelativeOffset = 50,
+            startRelativeTimeUnit = TimeUnit.Years
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEraRepo.findById(baseEraId.toHexString()) } returns baseEra
+
+        val result = DateCalculator.calculateEraStartDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        val expected = (1300.0 * 365.0) + (50.0 * 365.0)
+        result shouldBeExactly expected
+    }
+
+    @Test
+    fun `calculateEraStartDate - vague relative to event`() = runTest {
+        val baseEventId = ObjectId()
+        val baseEvent = TestData.createEvent(
+            id = baseEventId.toHexString(),
+            exactDate = ExactDate(year = 1400, month = 1, day = 1)
+        )
+
+        val era = TestData.createEra(
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEventId = baseEventId,
+            startRelativeOffset = null,
+            startRelativeTimeUnit = TimeUnit.Years,
+            startRelativeDirection = RelativeDirection.After
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEventRepo.findById(baseEventId.toHexString()) } returns baseEvent
+
+        val result = DateCalculator.calculateEraStartDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result shouldBeGreaterThan DateCalculator.calculateAbsoluteDate(baseEvent, mockEventRepo)!!
+    }
+
+    @Test
+    fun `calculateEraStartDate - detects circular dependency era to era`() = runTest {
+        val era1Id = ObjectId()
+        val era2Id = ObjectId()
+
+        val era1 = TestData.createEra(
+            id = era1Id.toHexString(),
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEraId = era2Id,
+            startRelativeOffset = 1,
+            startRelativeTimeUnit = TimeUnit.Years
+        )
+        val era2 = TestData.createEra(
+            id = era2Id.toHexString(),
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEraId = era1Id,
+            startRelativeOffset = 1,
+            startRelativeTimeUnit = TimeUnit.Years
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEraRepo.findById(era1Id.toHexString()) } returns era1
+        coEvery { mockEraRepo.findById(era2Id.toHexString()) } returns era2
+
+        val result = DateCalculator.calculateEraStartDate(era1, mockEraRepo, mockEventRepo)
+
+        result.shouldBeNull()
+    }
+
+    @Test
+    fun `calculateEraStartDate - approximation returns null`() = runTest {
+        val era = TestData.createEra(
+            startDateType = DateType.Approximation,
+            startDate = null,
+            startApproximateDescription = "Ancient times"
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraStartDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldBeNull()
+    }
+
+    @Test
+    fun `calculateEraEndDate - exact date`() = runTest {
+        val era = TestData.createEra(
+            endDateType = DateType.Exact,
+            endDate = ExactDate(year = 1450, month = 12, day = 31)
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraEndDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result shouldBeExactly (1450.0 * 365.0 + 11.0 * 30.0 + 30.0)
+    }
+
+    @Test
+    fun `calculateEraEndDate - relative to event`() = runTest {
+        val baseEventId = ObjectId()
+        val baseEvent = TestData.createEvent(
+            id = baseEventId.toHexString(),
+            exactDate = ExactDate(year = 1450, month = 12, day = 31)
+        )
+
+        val era = TestData.createEra(
+            endDateType = DateType.Relative,
+            endDate = null,
+            endRelativeEventId = baseEventId,
+            endRelativeOffset = 5,
+            endRelativeTimeUnit = TimeUnit.Days
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEventRepo.findById(baseEventId.toHexString()) } returns baseEvent
+
+        val result = DateCalculator.calculateEraEndDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        val expected = DateCalculator.calculateAbsoluteDate(baseEvent, mockEventRepo)!! + 5.0
+        result shouldBeExactly expected
+    }
+
+    @Test
+    fun `calculateEraEndDate - relative to another era end date`() = runTest {
+        val baseEraId = ObjectId()
+        val baseEra = TestData.createEra(
+            id = baseEraId.toHexString(),
+            endDateType = DateType.Exact,
+            endDate = ExactDate(year = 1450, month = 12, day = 31)
+        )
+
+        val era = TestData.createEra(
+            endDateType = DateType.Relative,
+            endDate = null,
+            endRelativeEraId = baseEraId,
+            endRelativeOffset = 10,
+            endRelativeTimeUnit = TimeUnit.Years
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEraRepo.findById(baseEraId.toHexString()) } returns baseEra
+
+        val result = DateCalculator.calculateEraEndDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        val expected = (1450.0 * 365.0 + 11.0 * 30.0 + 30.0) + (10.0 * 365.0)
+        result shouldBeExactly expected
+    }
+
+    @Test
+    fun `calculateEraStartExactDate - returns existing exact date`() = runTest {
+        val exactDate = ExactDate(year = 1400, month = 3, day = 15)
+        val era = TestData.createEra(
+            startDateType = DateType.Exact,
+            startDate = exactDate
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraStartExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result shouldBe exactDate
+    }
+
+    @Test
+    fun `calculateEraStartExactDate - calculates from relative date`() = runTest {
+        val baseEventId = ObjectId()
+        val baseEvent = TestData.createEvent(
+            id = baseEventId.toHexString(),
+            exactDate = ExactDate(year = 1400, month = 1, day = 1)
+        )
+
+        val era = TestData.createEra(
+            startDateType = DateType.Relative,
+            startDate = null,
+            startRelativeEventId = baseEventId,
+            startRelativeOffset = 30,
+            startRelativeTimeUnit = TimeUnit.Days
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEventRepo.findById(baseEventId.toHexString()) } returns baseEvent
+
+        val result = DateCalculator.calculateEraStartExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result.year shouldBe 1400
+        result.month shouldBe 2
+        result.day shouldBe 1
+    }
+
+    @Test
+    fun `calculateEraStartExactDate - approximation returns null`() = runTest {
+        val era = TestData.createEra(
+            startDateType = DateType.Approximation,
+            startDate = null,
+            startApproximateDescription = "Long ago"
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraStartExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldBeNull()
+    }
+
+    @Test
+    fun `calculateEraEndExactDate - returns existing exact date`() = runTest {
+        val exactDate = ExactDate(year = 1450, month = 12, day = 31)
+        val era = TestData.createEra(
+            endDateType = DateType.Exact,
+            endDate = exactDate
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraEndExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result shouldBe exactDate
+    }
+
+    @Test
+    fun `calculateEraEndExactDate - calculates from relative date`() = runTest {
+        val baseEraId = ObjectId()
+        val baseEra = TestData.createEra(
+            id = baseEraId.toHexString(),
+            endDateType = DateType.Exact,
+            endDate = ExactDate(year = 1450, month = 1, day = 1)
+        )
+
+        val era = TestData.createEra(
+            endDateType = DateType.Relative,
+            endDate = null,
+            endRelativeEraId = baseEraId,
+            endRelativeOffset = 365,
+            endRelativeTimeUnit = TimeUnit.Days
+        )
+
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+        coEvery { mockEraRepo.findById(baseEraId.toHexString()) } returns baseEra
+
+        val result = DateCalculator.calculateEraEndExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldNotBeNull()
+        result.year shouldBe 1451
+        result.month shouldBe 1
+        result.day shouldBe 1
+    }
+
+    @Test
+    fun `calculateEraEndExactDate - approximation returns null`() = runTest {
+        val era = TestData.createEra(
+            endDateType = DateType.Approximation,
+            endDate = null,
+            endApproximateDescription = "Modern times"
+        )
+        val mockEraRepo = mockk<com.repository.EraRepository>()
+        val mockEventRepo = mockk<EventRepository>()
+
+        val result = DateCalculator.calculateEraEndExactDate(era, mockEraRepo, mockEventRepo)
+
+        result.shouldBeNull()
+    }
+}
