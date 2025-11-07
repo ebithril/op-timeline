@@ -100,7 +100,7 @@
           <tbody>
             <tr
               v-for="user in users"
-              :key="user.username"
+              :key="user._id"
               class="border-b border-gray-100 hover:bg-gray-50"
             >
               <td class="py-3 px-4">
@@ -158,17 +158,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useAuthStore } from '../stores/auth'
 import { usersAPI } from '../services/api'
-import { useRouter } from 'vue-router'
-
-const authStore = useAuthStore()
-const router = useRouter()
-
-// Redirect if not admin
-if (!authStore.isAdmin) {
-  router.push('/')
-}
 
 const users = ref([])
 const loading = ref(false)
@@ -229,14 +219,16 @@ async function deactivateUser(user) {
     return
   }
 
+  if (!user._id) {
+    error.value = 'Cannot deactivate user: missing user ID'
+    return
+  }
+
   try {
-    // Find the user's ID - we need to get it from the users list
-    // The API requires the MongoDB _id, but the current response doesn't include it
-    // For now, we'll use username as a workaround
-    await usersAPI.deactivate(user._id || user.username)
+    await usersAPI.deactivate(user._id)
     await fetchUsers()
   } catch (err) {
-    alert(err.response?.data?.error || 'Failed to deactivate user')
+    error.value = err.response?.data?.error || 'Failed to deactivate user'
   }
 }
 

@@ -14,6 +14,7 @@ import ArcEditView from '../views/ArcEditView.vue'
 import ErasView from '../views/ErasView.vue'
 import EraEditView from '../views/EraEditView.vue'
 import AdminUsersView from '../views/AdminUsersView.vue'
+import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -112,6 +113,28 @@ const router = createRouter({
       path: '/admin/users',
       name: 'admin-users',
       component: AdminUsersView,
+      beforeEnter: async (to, from, next) => {
+        const authStore = useAuthStore()
+
+        // Wait for auth to finish loading if it's still loading
+        if (authStore.loading) {
+          await new Promise((resolve) => {
+            const unwatch = authStore.$subscribe(() => {
+              if (!authStore.loading) {
+                unwatch()
+                resolve()
+              }
+            })
+          })
+        }
+
+        // Check if user is admin
+        if (authStore.isAdmin) {
+          next()
+        } else {
+          next('/')
+        }
+      },
     },
   ],
 })
