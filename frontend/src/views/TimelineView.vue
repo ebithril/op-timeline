@@ -187,6 +187,30 @@ const authStore = useAuthStore()
 const selectedCharacters = ref([])
 const yearDisplayMode = ref(getDisplayModePreference())
 
+// Constants
+const MONTH_NAMES = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+]
+
+// Helper function to get event year consistently across all functions
+function getEventYear(event) {
+  // Try to get year from various sources in priority order
+  if (event.displayYear) {
+    return event.displayYear
+  }
+  if (event.calculatedExactDate?.year) {
+    return event.calculatedExactDate.year
+  }
+  if (event.exactDate?.year) {
+    return event.exactDate.year
+  }
+  if (typeof event.exactDate === 'number') {
+    return event.exactDate
+  }
+  return null
+}
+
 function saveDisplayModePreference() {
   savePreference(yearDisplayMode.value)
 }
@@ -205,23 +229,9 @@ const filteredEvents = computed(() => {
 
 // Group events by era
 const groupedByEra = computed(() => {
-  const sortedEras = [...erasStore.eras].sort((a, b) => {
-    if (a.startDate.year !== b.startDate.year) {
-      return a.startDate.year - b.startDate.year
-    }
-    const aMonth = a.startDate.month || 0
-    const bMonth = b.startDate.month || 0
-    if (aMonth !== bMonth) {
-      return aMonth - bMonth
-    }
-    const aDay = a.startDate.day || 0
-    const bDay = b.startDate.day || 0
-    return aDay - bDay
-  })
-
   // Helper to check if event falls within an era
   const isInEra = (event, era) => {
-    const eventYear = event.displayYear || event.exactDate?.year || event.exactDate
+    const eventYear = getEventYear(event)
     if (!eventYear) return false
 
     const startYear = era.startDate.year
@@ -234,8 +244,8 @@ const groupedByEra = computed(() => {
   const result = []
   const assignedEvents = new Set()
 
-  // Group events by era
-  for (const era of sortedEras) {
+  // Group events by era using the store's sorted eras
+  for (const era of erasStore.sortedEras) {
     const eraEvents = filteredEvents.value.filter(event => {
       if (assignedEvents.has(event._id)) return false
       if (isInEra(event, era)) {
@@ -291,18 +301,7 @@ function getEventTypeColor(type) {
 
 // Get display year for timeline left column
 function getDisplayYear(event) {
-  let year = null
-
-  // Try to get year from various sources
-  if (event.displayYear) {
-    year = event.displayYear
-  } else if (event.calculatedExactDate?.year) {
-    year = event.calculatedExactDate.year
-  } else if (event.exactDate?.year) {
-    year = event.exactDate.year
-  } else if (typeof event.exactDate === 'number') {
-    year = event.exactDate
-  }
+  const year = getEventYear(event)
 
   if (!year) {
     return event.dateType === 'Relative' ? 'Relative' : 'Unknown'
@@ -314,11 +313,6 @@ function getDisplayYear(event) {
 
 // Get display month/day for timeline left column
 function getDisplayMonthDay(event) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-
   let dateObj = null
 
   // Try to get full date from various sources
@@ -351,9 +345,9 @@ function getDisplayMonthDay(event) {
   const { month, day } = dateObj
 
   if (day && month) {
-    return `${monthNames[month - 1]} ${day}`
+    return `${MONTH_NAMES[month - 1]} ${day}`
   } else if (month) {
-    return monthNames[month - 1]
+    return MONTH_NAMES[month - 1]
   }
 
   return ''
@@ -367,11 +361,6 @@ function formatEraDate(date) {
 }
 
 function formatDate(event) {
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ]
-
   // Helper function to format a date object using the selected display mode
   const formatDateObj = (dateObj) => {
     if (!dateObj) return null
@@ -379,9 +368,9 @@ function formatDate(event) {
     const formattedYear = formatYearDisplay(year, yearDisplayMode.value)
 
     if (day && month) {
-      return `${monthNames[month - 1]} ${day}, ${formattedYear}`
+      return `${MONTH_NAMES[month - 1]} ${day}, ${formattedYear}`
     } else if (month) {
-      return `${monthNames[month - 1]} ${formattedYear}`
+      return `${MONTH_NAMES[month - 1]} ${formattedYear}`
     } else {
       return formattedYear
     }
