@@ -3,6 +3,7 @@ package com.routes
 import com.middleware.AuthMiddleware
 import com.middleware.authenticateUser
 import com.middleware.requireAdmin
+import com.model.User
 import com.model.UserRole
 import com.repository.UserRepository
 import io.ktor.http.*
@@ -25,12 +26,28 @@ data class UpdateRoleRequest(
 
 @Serializable
 data class UserResponse(
+	val _id: String? = null,
 	val username: String,
 	val role: UserRole,
 	val apiKey: String? = null,
 	val createdAt: Long,
 	val isActive: Boolean
 )
+
+/**
+ * Extension function to convert a User model to a UserResponse.
+ * @param includeApiKey Whether to include the API key in the response (default: false)
+ */
+fun User.toResponse(includeApiKey: Boolean = false): UserResponse {
+	return UserResponse(
+		_id = this._id?.toHexString(),
+		username = this.username,
+		role = this.role,
+		apiKey = if (includeApiKey) this.apiKey else null,
+		createdAt = this.createdAt,
+		isActive = this.isActive
+	)
+}
 
 fun Route.userRoutes() {
 	val userRepository = UserRepository()
@@ -42,13 +59,7 @@ fun Route.userRoutes() {
 			val user = call.authenticateUser(authMiddleware) ?: return@get
 
 			try {
-				val response = UserResponse(
-					username = user.username,
-					role = user.role,
-					createdAt = user.createdAt,
-					isActive = user.isActive
-				)
-				call.respond(HttpStatusCode.OK, response)
+				call.respond(HttpStatusCode.OK, user.toResponse())
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch user info: ${e.message}"))
 			}
@@ -69,14 +80,7 @@ fun Route.userRoutes() {
 				}
 
 				val newUser = userRepository.create(request.username, request.role)
-				val response = UserResponse(
-					username = newUser.username,
-					role = newUser.role,
-					apiKey = newUser.apiKey,
-					createdAt = newUser.createdAt,
-					isActive = newUser.isActive
-				)
-				call.respond(HttpStatusCode.Created, response)
+				call.respond(HttpStatusCode.Created, newUser.toResponse(includeApiKey = true))
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to create user: ${e.message}"))
 			}
@@ -88,15 +92,7 @@ fun Route.userRoutes() {
 
 			try {
 				val users = userRepository.findAll()
-				val responses = users.map { u ->
-					UserResponse(
-						username = u.username,
-						role = u.role,
-						createdAt = u.createdAt,
-						isActive = u.isActive
-					)
-				}
-				call.respond(HttpStatusCode.OK, responses)
+				call.respond(HttpStatusCode.OK, users.map { it.toResponse() })
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch users: ${e.message}"))
 			}
@@ -117,13 +113,7 @@ fun Route.userRoutes() {
 				if (updatedUser == null) {
 					call.respond(HttpStatusCode.NotFound, mapOf("error" to "User not found"))
 				} else {
-					val response = UserResponse(
-						username = updatedUser.username,
-						role = updatedUser.role,
-						createdAt = updatedUser.createdAt,
-						isActive = updatedUser.isActive
-					)
-					call.respond(HttpStatusCode.OK, response)
+					call.respond(HttpStatusCode.OK, updatedUser.toResponse())
 				}
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to update user role: ${e.message}"))
