@@ -155,9 +155,11 @@ Production build outputs to `src/main/resources/static/dist/`.
 
 ## API Documentation
 
-The API provides REST endpoints for managing events, characters, and users. All write operations require authentication via API key in the `X-API-Key` header.
+The API provides REST endpoints for managing events, characters, arcs, sagas, eras, locations, and users. All write operations require authentication via API key in the `X-API-Key` header.
 
-For complete API documentation with interactive examples, visit the **Swagger UI** at http://localhost:8080/swagger-ui once the backend is running.
+For complete API documentation with interactive examples, visit the **Swagger UI** at http://localhost:8080/swagger once the backend is running.
+
+The OpenAPI specification is **automatically generated from code** using [Kompendium](https://github.com/bkbnio/kompendium), ensuring documentation always stays in sync with the actual implementation.
 
 ## User Roles
 

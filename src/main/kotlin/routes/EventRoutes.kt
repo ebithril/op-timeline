@@ -5,6 +5,14 @@ import com.middleware.requireAdmin
 import com.middleware.requireEditor
 import com.model.Event
 import com.repository.EventRepository
+import io.bkbn.kompendium.core.metadata.GetInfo
+import io.bkbn.kompendium.core.metadata.PostInfo
+import io.bkbn.kompendium.core.metadata.PutInfo
+import io.bkbn.kompendium.core.metadata.DeleteInfo
+import io.bkbn.kompendium.core.metadata.method
+import io.bkbn.kompendium.core.plugin.NotarizedRoute
+import io.bkbn.kompendium.json.schema.definition.TypeDefinition
+import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*

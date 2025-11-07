@@ -43,9 +43,11 @@ dependencies {
     implementation("io.ktor:ktor-server-metrics-micrometer")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")
 
-    // OpenAPI/Swagger
-    implementation("io.ktor:ktor-server-openapi")
+    // OpenAPI/Swagger with Kompendium for code-generated docs
     implementation("io.ktor:ktor-server-swagger-ui")
+    implementation("io.bkbn:kompendium-core:3.14.4")
+    implementation("io.bkbn:kompendium-swagger-ui:3.14.4")
+    implementation("io.bkbn:kompendium-json-schema:3.14.4")
 
     // Testing dependencies
     testImplementation("io.ktor:ktor-server-test-host")
