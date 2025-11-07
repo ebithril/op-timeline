@@ -5,13 +5,6 @@ import com.middleware.authenticateUser
 import com.middleware.requireAdmin
 import com.model.UserRole
 import com.repository.UserRepository
-import io.bkbn.kompendium.core.metadata.DeleteInfo
-import io.bkbn.kompendium.core.metadata.GetInfo
-import io.bkbn.kompendium.core.metadata.PostInfo
-import io.bkbn.kompendium.core.metadata.PutInfo
-import io.bkbn.kompendium.core.plugin.NotarizedRoute
-import io.bkbn.kompendium.json.schema.definition.TypeDefinition
-import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -46,29 +39,6 @@ fun Route.userRoutes() {
 	route("/api/users") {
 		// Get current user info (requires authentication)
 		get("/me") {
-			install(NotarizedRoute()) {
-				tags = setOf("Users")
-				get = GetInfo.builder {
-					summary("Get current user info")
-					description("Get information about the authenticated user. Requires any valid authentication.")
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<UserResponse>()
-						description("Current user information")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.InternalServerError)
-						responseType<Map<String, String>>()
-						description("Failed to fetch user info")
-					}
-				}
-			}
-
 			val user = call.authenticateUser(authMiddleware) ?: return@get
 
 			try {
@@ -86,38 +56,6 @@ fun Route.userRoutes() {
 
 		// Create new user (admin only)
 		post {
-			install(NotarizedRoute()) {
-				tags = setOf("Users")
-				post = PostInfo.builder {
-					summary("Create new user")
-					description("Create a new user account with generated API key. Requires Admin role.")
-					request {
-						requestType<CreateUserRequest>()
-						description("User creation request with username and role")
-					}
-					response {
-						responseCode(HttpStatusCode.Created)
-						responseType<UserResponse>()
-						description("Created user with generated API key (only returned on creation)")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Conflict)
-						responseType<Map<String, String>>()
-						description("Username already exists")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.InternalServerError)
-						responseType<Map<String, String>>()
-						description("Failed to create user")
-					}
-				}
-			}
-
 			val user = call.requireAdmin(authMiddleware) ?: return@post
 
 			try {
@@ -146,29 +84,6 @@ fun Route.userRoutes() {
 
 		// Get all users (admin only)
 		get {
-			install(NotarizedRoute()) {
-				tags = setOf("Users")
-				get = GetInfo.builder {
-					summary("Get all users")
-					description("Retrieve all user accounts. Requires Admin role.")
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<List<UserResponse>>()
-						description("List of all users (API keys not included)")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.InternalServerError)
-						responseType<Map<String, String>>()
-						description("Failed to fetch users")
-					}
-				}
-			}
-
 			val user = call.requireAdmin(authMiddleware) ?: return@get
 
 			try {
@@ -189,46 +104,6 @@ fun Route.userRoutes() {
 
 		// Update user role (admin only)
 		put("/{id}/role") {
-			install(NotarizedRoute()) {
-				tags = setOf("Users")
-				put = PutInfo.builder {
-					summary("Update user role")
-					description("Update a user's role (Viewer, Editor, or Admin). Requires Admin role.")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "User ID"
-						)
-					)
-					request {
-						requestType<UpdateRoleRequest>()
-						description("New role for the user")
-					}
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<UserResponse>()
-						description("Updated user information")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("User not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing user ID")
-					}
-				}
-			}
-
 			val user = call.requireAdmin(authMiddleware) ?: return@put
 
 			val id = call.parameters["id"] ?: run {
@@ -257,42 +132,6 @@ fun Route.userRoutes() {
 
 		// Deactivate user (admin only)
 		delete("/{id}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Users")
-				delete = DeleteInfo.builder {
-					summary("Deactivate user")
-					description("Deactivate a user account (soft delete). Requires Admin role.")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "User ID"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<Map<String, String>>()
-						description("User deactivated successfully")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("User not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing user ID")
-					}
-				}
-			}
-
 			val user = call.requireAdmin(authMiddleware) ?: return@delete
 
 			val id = call.parameters["id"] ?: run {

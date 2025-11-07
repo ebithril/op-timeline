@@ -6,20 +6,11 @@ import com.middleware.requireEditor
 import com.model.Character
 import com.repository.CharacterRepository
 import com.repository.EventRepository
-import io.bkbn.kompendium.core.metadata.DeleteInfo
-import io.bkbn.kompendium.core.metadata.GetInfo
-import io.bkbn.kompendium.core.metadata.PostInfo
-import io.bkbn.kompendium.core.metadata.PutInfo
-import io.bkbn.kompendium.core.plugin.NotarizedRoute
-import io.bkbn.kompendium.json.schema.definition.TypeDefinition
-import io.bkbn.kompendium.oas.payload.Parameter
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import com.model.Event
-import kotlin.reflect.typeOf
 
 fun Route.characterRoutes() {
 	val eventRepository = EventRepository()
@@ -29,24 +20,6 @@ fun Route.characterRoutes() {
 	route("/api/characters") {
 		// Get all characters (public)
 		get {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				get = GetInfo.builder {
-					summary("Get all characters")
-					description("Retrieve all characters in the One Piece timeline")
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<List<Character>>()
-						description("List of all characters")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.InternalServerError)
-						responseType<Map<String, String>>()
-						description("Internal server error")
-					}
-				}
-			}
-
 			try {
 				val characters = characterRepository.findAll()
 				call.respond(HttpStatusCode.OK, characters)
@@ -57,37 +30,6 @@ fun Route.characterRoutes() {
 
 		// Get character by ID (public)
 		get("/{id}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				get = GetInfo.builder {
-					summary("Get character by ID")
-					description("Retrieve a specific character by their unique identifier")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Character ID"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<Character>()
-						description("Character details")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("Character not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing character ID")
-					}
-				}
-			}
-
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing character ID"))
 				return@get
@@ -107,32 +49,6 @@ fun Route.characterRoutes() {
 
 		// Search characters by name (public)
 		get("/search/{query}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				get = GetInfo.builder {
-					summary("Search characters by name")
-					description("Search for characters by name (case-insensitive partial match)")
-					parameters = listOf(
-						Parameter(
-							name = "query",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Search query"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<List<Character>>()
-						description("List of matching characters")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing search query")
-					}
-				}
-			}
-
 			val query = call.parameters["query"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing search query"))
 				return@get
@@ -148,37 +64,6 @@ fun Route.characterRoutes() {
 
 		// Get timeline (all events) for a character (public)
 		get("/{id}/timeline") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				get = GetInfo.builder {
-					summary("Get character timeline")
-					description("Retrieve all events involving a specific character, sorted chronologically")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Character ID"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<List<Event>>()
-						description("Timeline of events involving this character")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("Character not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing character ID")
-					}
-				}
-			}
-
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing character ID"))
 				return@get
@@ -212,32 +97,6 @@ fun Route.characterRoutes() {
 
 		// Get characters alive at date (public)
 		get("/alive-at/{date}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				get = GetInfo.builder {
-					summary("Get characters alive at specific date")
-					description("Get all characters who were alive at a specific date. Date format: year-month-day (e.g., 1539-2-10)")
-					parameters = listOf(
-						Parameter(
-							name = "date",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Date in format year-month-day"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<List<Map<String, String?>>>()
-						description("List of characters alive at the specified date, including their ages")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing or invalid date format")
-					}
-				}
-			}
-
 			val dateString = call.parameters["date"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing date"))
 				return@get
@@ -303,33 +162,6 @@ fun Route.characterRoutes() {
 
 		// Create character (requires editor or admin)
 		post {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				post = PostInfo.builder {
-					summary("Create new character")
-					description("Create a new character. Requires Editor or Admin role.")
-					request {
-						requestType<Character>()
-						description("Character data")
-					}
-					response {
-						responseCode(HttpStatusCode.Created)
-						responseType<Character>()
-						description("Created character with generated ID")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.InternalServerError)
-						responseType<Map<String, String>>()
-						description("Failed to create character")
-					}
-				}
-			}
-
 			val user = call.requireEditor(authMiddleware) ?: return@post
 
 			try {
@@ -343,46 +175,6 @@ fun Route.characterRoutes() {
 
 		// Update character (requires editor or admin)
 		put("/{id}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				put = PutInfo.builder {
-					summary("Update character")
-					description("Update an existing character. Requires Editor or Admin role.")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Character ID"
-						)
-					)
-					request {
-						requestType<Character>()
-						description("Updated character data")
-					}
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<Character>()
-						description("Updated character")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("Character not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing character ID")
-					}
-				}
-			}
-
 			val user = call.requireEditor(authMiddleware) ?: return@put
 
 			val id = call.parameters["id"] ?: run {
@@ -405,42 +197,6 @@ fun Route.characterRoutes() {
 
 		// Delete character (admin only)
 		delete("/{id}") {
-			install(NotarizedRoute()) {
-				tags = setOf("Characters")
-				delete = DeleteInfo.builder {
-					summary("Delete character")
-					description("Delete a character. Requires Admin role.")
-					parameters = listOf(
-						Parameter(
-							name = "id",
-							`in` = Parameter.Location.path,
-							schema = TypeDefinition.STRING,
-							description = "Character ID"
-						)
-					)
-					response {
-						responseCode(HttpStatusCode.OK)
-						responseType<Map<String, String>>()
-						description("Character deleted successfully")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.Unauthorized)
-						responseType<Map<String, String>>()
-						description("Not authenticated or insufficient permissions")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.NotFound)
-						responseType<Map<String, String>>()
-						description("Character not found")
-					}
-					canRespond {
-						responseCode(HttpStatusCode.BadRequest)
-						responseType<Map<String, String>>()
-						description("Missing character ID")
-					}
-				}
-			}
-
 			val user = call.requireAdmin(authMiddleware) ?: return@delete
 
 			val id = call.parameters["id"] ?: run {
