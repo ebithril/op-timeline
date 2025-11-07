@@ -5,11 +5,10 @@ import com.middleware.requireAdmin
 import com.middleware.requireEditor
 import com.model.Event
 import com.repository.EventRepository
+import io.bkbn.kompendium.core.metadata.DeleteInfo
 import io.bkbn.kompendium.core.metadata.GetInfo
 import io.bkbn.kompendium.core.metadata.PostInfo
 import io.bkbn.kompendium.core.metadata.PutInfo
-import io.bkbn.kompendium.core.metadata.DeleteInfo
-import io.bkbn.kompendium.core.metadata.method
 import io.bkbn.kompendium.core.plugin.NotarizedRoute
 import io.bkbn.kompendium.json.schema.definition.TypeDefinition
 import io.bkbn.kompendium.oas.payload.Parameter
@@ -18,6 +17,7 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlin.reflect.typeOf
 
 fun Route.eventRoutes() {
 	val eventRepository = EventRepository()
@@ -26,6 +26,24 @@ fun Route.eventRoutes() {
 	route("/api/events") {
 		// Get all events (public)
 		get {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get all events")
+					description("Retrieve all timeline events, including births, deaths, fights, and other events")
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<List<Event>>()
+						description("List of all events")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.InternalServerError)
+						responseType<Map<String, String>>()
+						description("Internal server error")
+					}
+				}
+			}
+
 			try {
 				val events = eventRepository.findAll()
 				call.respond(HttpStatusCode.OK, events)
@@ -36,6 +54,37 @@ fun Route.eventRoutes() {
 
 		// Get event by ID (public)
 		get("/{id}") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get event by ID")
+					description("Retrieve a specific event by its unique identifier")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Event ID"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<Event>()
+						description("Event details")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.NotFound)
+						responseType<Map<String, String>>()
+						description("Event not found")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing or invalid event ID")
+					}
+				}
+			}
+
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
 				return@get
@@ -55,6 +104,32 @@ fun Route.eventRoutes() {
 
 		// Get events by character (public)
 		get("/character/{name}") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get events by character")
+					description("Retrieve all events involving a specific character")
+					parameters = listOf(
+						Parameter(
+							name = "name",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Character name"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<List<Event>>()
+						description("List of events involving the character")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing character name")
+					}
+				}
+			}
+
 			val name = call.parameters["name"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing character name"))
 				return@get
@@ -70,6 +145,32 @@ fun Route.eventRoutes() {
 
 		// Get child events of a parent event (public)
 		get("/{id}/children") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get child events")
+					description("Retrieve all child events of a parent event (hierarchical events)")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Parent event ID"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<List<Event>>()
+						description("List of child events")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing event ID")
+					}
+				}
+			}
+
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
 				return@get
@@ -85,6 +186,32 @@ fun Route.eventRoutes() {
 
 		// Get timeline (child events) for a parent event (public)
 		get("/{id}/timeline") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get event timeline")
+					description("Retrieve the timeline (all child events) for a parent event")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Parent event ID"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<List<Event>>()
+						description("Timeline of child events")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing event ID")
+					}
+				}
+			}
+
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
 				return@get
@@ -100,6 +227,33 @@ fun Route.eventRoutes() {
 
 		// Create new event (requires editor or admin)
 		post {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				post = PostInfo.builder {
+					summary("Create new event")
+					description("Create a new timeline event. Requires Editor or Admin role. At least one source is required.")
+					request {
+						requestType<Event>()
+						description("Event data")
+					}
+					response {
+						responseCode(HttpStatusCode.Created)
+						responseType<Event>()
+						description("Created event with generated ID and calculated dates")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.Unauthorized)
+						responseType<Map<String, String>>()
+						description("Not authenticated or insufficient permissions")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing required fields or validation error")
+					}
+				}
+			}
+
 			val user = call.requireEditor(authMiddleware) ?: return@post
 
 			try {
@@ -119,6 +273,46 @@ fun Route.eventRoutes() {
 
 		// Update event (requires editor or admin)
 		put("/{id}") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				put = PutInfo.builder {
+					summary("Update event")
+					description("Update an existing event. Requires Editor or Admin role. Creates a new version in history.")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Event ID"
+						)
+					)
+					request {
+						requestType<Event>()
+						description("Updated event data")
+					}
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<Event>()
+						description("Updated event")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.Unauthorized)
+						responseType<Map<String, String>>()
+						description("Not authenticated or insufficient permissions")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.NotFound)
+						responseType<Map<String, String>>()
+						description("Event not found")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing required fields or validation error")
+					}
+				}
+			}
+
 			val user = call.requireEditor(authMiddleware) ?: return@put
 
 			val id = call.parameters["id"] ?: run {
@@ -146,6 +340,37 @@ fun Route.eventRoutes() {
 
 		// Delete event (soft delete, admin only)
 		delete("/{id}") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				delete = DeleteInfo.builder {
+					summary("Delete event")
+					description("Soft delete an event (marks as deleted). Requires Admin role.")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Event ID"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<Map<String, String>>()
+						description("Event deleted successfully")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.Unauthorized)
+						responseType<Map<String, String>>()
+						description("Not authenticated or insufficient permissions")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.NotFound)
+						responseType<Map<String, String>>()
+						description("Event not found")
+					}
+				}
+			}
+
 			val user = call.requireAdmin(authMiddleware) ?: return@delete
 
 			val id = call.parameters["id"] ?: run {
@@ -167,6 +392,32 @@ fun Route.eventRoutes() {
 
 		// Get version history (public)
 		get("/{id}/history") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				get = GetInfo.builder {
+					summary("Get event version history")
+					description("Retrieve the complete version history for an event, showing all changes over time")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Event ID"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType(typeOf<List<Event>>())
+						description("List of event versions, ordered by version number")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Missing event ID")
+					}
+				}
+			}
+
 			val id = call.parameters["id"] ?: run {
 				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
 				return@get
@@ -182,6 +433,48 @@ fun Route.eventRoutes() {
 
 		// Revert to version (admin only)
 		post("/{id}/revert/{version}") {
+			install(NotarizedRoute()) {
+				tags = setOf("Events")
+				post = PostInfo.builder {
+					summary("Revert event to previous version")
+					description("Revert an event to a specific version from its history. Requires Admin role. This creates a new version with the old content.")
+					parameters = listOf(
+						Parameter(
+							name = "id",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.STRING,
+							description = "Event ID"
+						),
+						Parameter(
+							name = "version",
+							`in` = Parameter.Location.path,
+							schema = TypeDefinition.INT,
+							description = "Version number to revert to"
+						)
+					)
+					response {
+						responseCode(HttpStatusCode.OK)
+						responseType<Event>()
+						description("Reverted event (new version created)")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.Unauthorized)
+						responseType<Map<String, String>>()
+						description("Not authenticated or insufficient permissions")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.NotFound)
+						responseType<Map<String, String>>()
+						description("Event or version not found")
+					}
+					canRespond {
+						responseCode(HttpStatusCode.BadRequest)
+						responseType<Map<String, String>>()
+						description("Invalid version number")
+					}
+				}
+			}
+
 			val user = call.requireAdmin(authMiddleware) ?: return@post
 
 			val id = call.parameters["id"] ?: run {
