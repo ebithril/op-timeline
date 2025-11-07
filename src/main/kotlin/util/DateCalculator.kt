@@ -93,7 +93,7 @@ object DateCalculator {
 	): Double? {
 		// Prevent infinite loops from circular references
 		if (event._id != null) {
-			val eventId = event._id.toHexString()
+			val eventId = "event:${event._id.toHexString()}"
 			if (eventId in visited) {
 				return null // Circular dependency detected
 			}

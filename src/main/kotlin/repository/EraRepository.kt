@@ -31,52 +31,10 @@ class EraRepository(private val eventRepository: EventRepository) {
 		return erasCollection.find(Filters.eq("_id", objectId)).firstOrNull()
 	}
 
-	suspend fun create(era: Era, username: String): Era {
-		val timestamp = System.currentTimeMillis()
-
-		// Create era with generated ID first
-		val eraWithId = era.copy(
-			_id = ObjectId(),
-			createdAt = timestamp,
-			createdBy = username,
-			updatedAt = timestamp,
-			updatedBy = username
-		)
-
-		// Calculate dates for start
-		val startAbsoluteDate = DateCalculator.calculateEraStartDate(eraWithId, this, eventRepository)
-		val startCalculatedExactDate = DateCalculator.calculateEraStartExactDate(eraWithId, this, eventRepository)
-		val startDisplayYear = when (eraWithId.startDateType) {
-			DateType.Exact -> eraWithId.startDate?.year
-			DateType.Relative -> startCalculatedExactDate?.year ?: startAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-			DateType.Approximation -> null
-		}
-
-		// Calculate dates for end
-		val endAbsoluteDate = DateCalculator.calculateEraEndDate(eraWithId, this, eventRepository)
-		val endCalculatedExactDate = DateCalculator.calculateEraEndExactDate(eraWithId, this, eventRepository)
-		val endDisplayYear = when (eraWithId.endDateType) {
-			DateType.Exact -> eraWithId.endDate?.year
-			DateType.Relative -> endCalculatedExactDate?.year ?: endAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-			DateType.Approximation -> null
-		}
-
-		val newEra = eraWithId.copy(
-			startCalculatedAbsoluteDate = startAbsoluteDate,
-			startCalculatedExactDate = startCalculatedExactDate,
-			startDisplayYear = startDisplayYear,
-			endCalculatedAbsoluteDate = endAbsoluteDate,
-			endCalculatedExactDate = endCalculatedExactDate,
-			endDisplayYear = endDisplayYear
-		)
-
-		erasCollection.insertOne(newEra)
-		return newEra
-	}
-
-	suspend fun update(id: String, era: Era, username: String): Era? {
-		val existingEra = findById(id) ?: return null
-
+	/**
+	 * Calculate all date fields for an era and return a copy with calculated values
+	 */
+	private suspend fun calculateEraDateFields(era: Era): Era {
 		// Calculate dates for start
 		val startAbsoluteDate = DateCalculator.calculateEraStartDate(era, this, eventRepository)
 		val startCalculatedExactDate = DateCalculator.calculateEraStartExactDate(era, this, eventRepository)
@@ -95,12 +53,7 @@ class EraRepository(private val eventRepository: EventRepository) {
 			DateType.Approximation -> null
 		}
 
-		val updatedEra = era.copy(
-			_id = existingEra._id,
-			createdAt = existingEra.createdAt,
-			createdBy = existingEra.createdBy,
-			updatedAt = System.currentTimeMillis(),
-			updatedBy = username,
+		return era.copy(
 			startCalculatedAbsoluteDate = startAbsoluteDate,
 			startCalculatedExactDate = startCalculatedExactDate,
 			startDisplayYear = startDisplayYear,
@@ -108,6 +61,40 @@ class EraRepository(private val eventRepository: EventRepository) {
 			endCalculatedExactDate = endCalculatedExactDate,
 			endDisplayYear = endDisplayYear
 		)
+	}
+
+	suspend fun create(era: Era, username: String): Era {
+		val timestamp = System.currentTimeMillis()
+
+		// Create era with generated ID first
+		val eraWithId = era.copy(
+			_id = ObjectId(),
+			createdAt = timestamp,
+			createdBy = username,
+			updatedAt = timestamp,
+			updatedBy = username
+		)
+
+		// Calculate all date fields
+		val newEra = calculateEraDateFields(eraWithId)
+
+		erasCollection.insertOne(newEra)
+		return newEra
+	}
+
+	suspend fun update(id: String, era: Era, username: String): Era? {
+		val existingEra = findById(id) ?: return null
+
+		// Preserve metadata and calculate date fields
+		val eraWithMetadata = era.copy(
+			_id = existingEra._id,
+			createdAt = existingEra.createdAt,
+			createdBy = existingEra.createdBy,
+			updatedAt = System.currentTimeMillis(),
+			updatedBy = username
+		)
+
+		val updatedEra = calculateEraDateFields(eraWithMetadata)
 
 		erasCollection.replaceOne(
 			Filters.eq("_id", existingEra._id),
@@ -128,34 +115,13 @@ class EraRepository(private val eventRepository: EventRepository) {
 		val dependentEras = findByRelativeEraId(eraId)
 
 		for (dependent in dependentEras) {
-			// Calculate dates for start
-			val startAbsoluteDate = DateCalculator.calculateEraStartDate(dependent, this, eventRepository)
-			val startCalculatedExactDate = DateCalculator.calculateEraStartExactDate(dependent, this, eventRepository)
-			val startDisplayYear = when (dependent.startDateType) {
-				DateType.Exact -> dependent.startDate?.year
-				DateType.Relative -> startCalculatedExactDate?.year ?: startAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-				DateType.Approximation -> null
-			}
-
-			// Calculate dates for end
-			val endAbsoluteDate = DateCalculator.calculateEraEndDate(dependent, this, eventRepository)
-			val endCalculatedExactDate = DateCalculator.calculateEraEndExactDate(dependent, this, eventRepository)
-			val endDisplayYear = when (dependent.endDateType) {
-				DateType.Exact -> dependent.endDate?.year
-				DateType.Relative -> endCalculatedExactDate?.year ?: endAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-				DateType.Approximation -> null
-			}
-
-			val updatedDependent = dependent.copy(
-				startCalculatedAbsoluteDate = startAbsoluteDate,
-				startCalculatedExactDate = startCalculatedExactDate,
-				startDisplayYear = startDisplayYear,
-				endCalculatedAbsoluteDate = endAbsoluteDate,
-				endCalculatedExactDate = endCalculatedExactDate,
-				endDisplayYear = endDisplayYear,
+			// Update metadata and recalculate date fields
+			val eraWithUpdatedMetadata = dependent.copy(
 				updatedAt = System.currentTimeMillis(),
 				updatedBy = username
 			)
+
+			val updatedDependent = calculateEraDateFields(eraWithUpdatedMetadata)
 
 			erasCollection.replaceOne(
 				Filters.eq("_id", dependent._id),
@@ -163,7 +129,8 @@ class EraRepository(private val eventRepository: EventRepository) {
 			)
 
 			// Recursively update eras that depend on this era
-			recalculateDependentEras(dependent._id!!.toHexString(), username)
+			val dependentId = dependent._id?.toHexString() ?: continue
+			recalculateDependentEras(dependentId, username)
 		}
 	}
 
@@ -199,34 +166,13 @@ class EraRepository(private val eventRepository: EventRepository) {
 		val dependentEras = findByRelativeEventId(eventId)
 
 		for (dependent in dependentEras) {
-			// Calculate dates for start
-			val startAbsoluteDate = DateCalculator.calculateEraStartDate(dependent, this, eventRepository)
-			val startCalculatedExactDate = DateCalculator.calculateEraStartExactDate(dependent, this, eventRepository)
-			val startDisplayYear = when (dependent.startDateType) {
-				DateType.Exact -> dependent.startDate?.year
-				DateType.Relative -> startCalculatedExactDate?.year ?: startAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-				DateType.Approximation -> null
-			}
-
-			// Calculate dates for end
-			val endAbsoluteDate = DateCalculator.calculateEraEndDate(dependent, this, eventRepository)
-			val endCalculatedExactDate = DateCalculator.calculateEraEndExactDate(dependent, this, eventRepository)
-			val endDisplayYear = when (dependent.endDateType) {
-				DateType.Exact -> dependent.endDate?.year
-				DateType.Relative -> endCalculatedExactDate?.year ?: endAbsoluteDate?.let { (it / DateCalculator.DAYS_PER_YEAR).toInt() }
-				DateType.Approximation -> null
-			}
-
-			val updatedDependent = dependent.copy(
-				startCalculatedAbsoluteDate = startAbsoluteDate,
-				startCalculatedExactDate = startCalculatedExactDate,
-				startDisplayYear = startDisplayYear,
-				endCalculatedAbsoluteDate = endAbsoluteDate,
-				endCalculatedExactDate = endCalculatedExactDate,
-				endDisplayYear = endDisplayYear,
+			// Update metadata and recalculate date fields
+			val eraWithUpdatedMetadata = dependent.copy(
 				updatedAt = System.currentTimeMillis(),
 				updatedBy = username
 			)
+
+			val updatedDependent = calculateEraDateFields(eraWithUpdatedMetadata)
 
 			erasCollection.replaceOne(
 				Filters.eq("_id", dependent._id),
@@ -234,7 +180,8 @@ class EraRepository(private val eventRepository: EventRepository) {
 			)
 
 			// Recursively update eras that depend on this era
-			recalculateDependentEras(dependent._id!!.toHexString(), username)
+			val dependentId = dependent._id?.toHexString() ?: continue
+			recalculateDependentEras(dependentId, username)
 		}
 	}
 
