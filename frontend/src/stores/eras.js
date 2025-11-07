@@ -10,18 +10,38 @@ export const useErasStore = defineStore('eras', () => {
 
   const sortedEras = computed(() => {
     return [...eras.value].sort((a, b) => {
-      // Sort by start date (year, then month, then day)
-      if (a.startDate.year !== b.startDate.year) {
-        return a.startDate.year - b.startDate.year
+      // Sort by calculated absolute date first (most accurate), then by display year
+      const aAbsolute = a.startCalculatedAbsoluteDate
+      const bAbsolute = b.startCalculatedAbsoluteDate
+
+      if (aAbsolute !== null && aAbsolute !== undefined && bAbsolute !== null && bAbsolute !== undefined) {
+        return aAbsolute - bAbsolute
       }
-      const aMonth = a.startDate.month || 0
-      const bMonth = b.startDate.month || 0
-      if (aMonth !== bMonth) {
-        return aMonth - bMonth
+
+      // Fallback to display year if absolute dates not available
+      const aYear = a.startDisplayYear || a.startDate?.year || 0
+      const bYear = b.startDisplayYear || b.startDate?.year || 0
+
+      if (aYear !== bYear) {
+        return aYear - bYear
       }
-      const aDay = a.startDate.day || 0
-      const bDay = b.startDate.day || 0
-      return aDay - bDay
+
+      // If years are the same, sort by month and day from exact or calculated dates
+      const aDate = a.startCalculatedExactDate || a.startDate
+      const bDate = b.startCalculatedExactDate || b.startDate
+
+      if (aDate && bDate) {
+        const aMonth = aDate.month || 0
+        const bMonth = bDate.month || 0
+        if (aMonth !== bMonth) {
+          return aMonth - bMonth
+        }
+        const aDay = aDate.day || 0
+        const bDay = bDate.day || 0
+        return aDay - bDay
+      }
+
+      return 0
     })
   })
 

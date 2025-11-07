@@ -4,6 +4,7 @@ import com.middleware.AuthMiddleware
 import com.middleware.requireAdmin
 import com.middleware.requireEditor
 import com.model.Event
+import com.repository.EraRepository
 import com.repository.EventRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
@@ -13,6 +14,7 @@ import io.ktor.server.routing.*
 
 fun Route.eventRoutes() {
 	val eventRepository = EventRepository()
+	val eraRepository = EraRepository(eventRepository)
 	val authMiddleware = AuthMiddleware()
 
 	route("/api/events") {
@@ -129,6 +131,8 @@ fun Route.eventRoutes() {
 				if (updatedEvent == null) {
 					call.respond(HttpStatusCode.NotFound, mapOf("error" to "Event not found"))
 				} else {
+					// Recalculate any eras that depend on this event
+					eraRepository.recalculateDependentErasForEvent(id, user.username)
 					call.respond(HttpStatusCode.OK, updatedEvent)
 				}
 			} catch (e: Exception) {

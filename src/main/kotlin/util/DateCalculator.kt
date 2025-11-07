@@ -1,9 +1,12 @@
 package com.util
 
+import com.model.DateType
+import com.model.Era
 import com.model.Event
 import com.model.ExactDate
 import com.model.RelativeDirection
 import com.model.TimeUnit
+import com.repository.EraRepository
 import com.repository.EventRepository
 
 object DateCalculator {
@@ -158,5 +161,206 @@ object DateCalculator {
 	): Event {
 		val absoluteDate = calculateAbsoluteDate(event, eventRepository)
 		return event.copy(calculatedAbsoluteDate = absoluteDate)
+	}
+
+	/**
+	 * Calculate the absolute date for an era's start date (in days from year 0)
+	 * Returns null if the date cannot be calculated (e.g., circular dependencies)
+	 */
+	suspend fun calculateEraStartDate(
+		era: Era,
+		eraRepository: EraRepository,
+		eventRepository: EventRepository,
+		visited: MutableSet<String> = mutableSetOf()
+	): Double? {
+		// Prevent infinite loops from circular references
+		if (era._id != null) {
+			val eraId = "era:${era._id.toHexString()}"
+			if (eraId in visited) {
+				return null // Circular dependency detected
+			}
+			visited.add(eraId)
+		}
+
+		return when (era.startDateType) {
+			DateType.Exact -> {
+				// Exact date: convert to days
+				era.startDate?.let { exactDateToDays(it) }
+			}
+
+			DateType.Relative -> {
+				// Relative date: calculate based on referenced era or event
+				when {
+					// Relative to another era
+					era.startRelativeEraId != null && era.startRelativeTimeUnit != null -> {
+						val referencedEra = eraRepository.findById(era.startRelativeEraId.toHexString())
+							?: return null
+
+						val referencedAbsoluteDate = calculateEraStartDate(
+							referencedEra,
+							eraRepository,
+							eventRepository,
+							visited
+						) ?: return null
+
+						// If offset is specified, use it; otherwise use midpoint estimate for vague relative
+						val offsetInDays = if (era.startRelativeOffset != null) {
+							timeUnitToDays(era.startRelativeOffset, era.startRelativeTimeUnit)
+						} else {
+							// Vague relative date - use midpoint estimate with direction
+							getVagueOffsetMidpoint(era.startRelativeTimeUnit, era.startRelativeDirection)
+						}
+						referencedAbsoluteDate + offsetInDays
+					}
+
+					// Relative to an event
+					era.startRelativeEventId != null && era.startRelativeTimeUnit != null -> {
+						val referencedEvent = eventRepository.findById(era.startRelativeEventId.toHexString())
+							?: return null
+
+						val referencedAbsoluteDate = calculateAbsoluteDate(referencedEvent, eventRepository, visited)
+							?: return null
+
+						// If offset is specified, use it; otherwise use midpoint estimate for vague relative
+						val offsetInDays = if (era.startRelativeOffset != null) {
+							timeUnitToDays(era.startRelativeOffset, era.startRelativeTimeUnit)
+						} else {
+							// Vague relative date - use midpoint estimate with direction
+							getVagueOffsetMidpoint(era.startRelativeTimeUnit, era.startRelativeDirection)
+						}
+						referencedAbsoluteDate + offsetInDays
+					}
+
+					else -> null
+				}
+			}
+
+			DateType.Approximation -> null
+		}
+	}
+
+	/**
+	 * Calculate the absolute date for an era's end date (in days from year 0)
+	 * Returns null if the date cannot be calculated (e.g., circular dependencies)
+	 */
+	suspend fun calculateEraEndDate(
+		era: Era,
+		eraRepository: EraRepository,
+		eventRepository: EventRepository,
+		visited: MutableSet<String> = mutableSetOf()
+	): Double? {
+		// Prevent infinite loops from circular references
+		if (era._id != null) {
+			val eraId = "era:${era._id.toHexString()}"
+			if (eraId in visited) {
+				return null // Circular dependency detected
+			}
+			visited.add(eraId)
+		}
+
+		return when (era.endDateType) {
+			DateType.Exact -> {
+				// Exact date: convert to days
+				era.endDate?.let { exactDateToDays(it) }
+			}
+
+			DateType.Relative -> {
+				// Relative date: calculate based on referenced era or event
+				when {
+					// Relative to another era
+					era.endRelativeEraId != null && era.endRelativeTimeUnit != null -> {
+						val referencedEra = eraRepository.findById(era.endRelativeEraId.toHexString())
+							?: return null
+
+						// For end dates relative to eras, use the end date of referenced era
+						val referencedAbsoluteDate = calculateEraEndDate(
+							referencedEra,
+							eraRepository,
+							eventRepository,
+							visited
+						) ?: return null
+
+						// If offset is specified, use it; otherwise use midpoint estimate for vague relative
+						val offsetInDays = if (era.endRelativeOffset != null) {
+							timeUnitToDays(era.endRelativeOffset, era.endRelativeTimeUnit)
+						} else {
+							// Vague relative date - use midpoint estimate with direction
+							getVagueOffsetMidpoint(era.endRelativeTimeUnit, era.endRelativeDirection)
+						}
+						referencedAbsoluteDate + offsetInDays
+					}
+
+					// Relative to an event
+					era.endRelativeEventId != null && era.endRelativeTimeUnit != null -> {
+						val referencedEvent = eventRepository.findById(era.endRelativeEventId.toHexString())
+							?: return null
+
+						val referencedAbsoluteDate = calculateAbsoluteDate(referencedEvent, eventRepository, visited)
+							?: return null
+
+						// If offset is specified, use it; otherwise use midpoint estimate for vague relative
+						val offsetInDays = if (era.endRelativeOffset != null) {
+							timeUnitToDays(era.endRelativeOffset, era.endRelativeTimeUnit)
+						} else {
+							// Vague relative date - use midpoint estimate with direction
+							getVagueOffsetMidpoint(era.endRelativeTimeUnit, era.endRelativeDirection)
+						}
+						referencedAbsoluteDate + offsetInDays
+					}
+
+					else -> null
+				}
+			}
+
+			DateType.Approximation -> null
+		}
+	}
+
+	/**
+	 * Calculate the exact date (year/month/day) for an era's start date with relative dates
+	 * Returns null if the date cannot be calculated
+	 */
+	suspend fun calculateEraStartExactDate(
+		era: Era,
+		eraRepository: EraRepository,
+		eventRepository: EventRepository
+	): ExactDate? {
+		// If era already has an exact start date, return it
+		if (era.startDate != null && era.startDateType == DateType.Exact) {
+			return era.startDate
+		}
+
+		// For relative dates, calculate the absolute date and convert back to ExactDate
+		if (era.startDateType == DateType.Relative) {
+			val absoluteDate = calculateEraStartDate(era, eraRepository, eventRepository) ?: return null
+			return daysToExactDate(absoluteDate)
+		}
+
+		// Cannot calculate for approximations
+		return null
+	}
+
+	/**
+	 * Calculate the exact date (year/month/day) for an era's end date with relative dates
+	 * Returns null if the date cannot be calculated
+	 */
+	suspend fun calculateEraEndExactDate(
+		era: Era,
+		eraRepository: EraRepository,
+		eventRepository: EventRepository
+	): ExactDate? {
+		// If era already has an exact end date, return it
+		if (era.endDate != null && era.endDateType == DateType.Exact) {
+			return era.endDate
+		}
+
+		// For relative dates, calculate the absolute date and convert back to ExactDate
+		if (era.endDateType == DateType.Relative) {
+			val absoluteDate = calculateEraEndDate(era, eraRepository, eventRepository) ?: return null
+			return daysToExactDate(absoluteDate)
+		}
+
+		// Cannot calculate for approximations
+		return null
 	}
 }

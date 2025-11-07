@@ -38,7 +38,10 @@
             <div class="text-sm text-gray-600 space-y-1">
               <p>
                 <span class="font-semibold">Time Period:</span>
-                {{ formatDate(era.startDate) }} - {{ formatDate(era.endDate) }}
+                {{ formatEraDate(era, 'start') }} - {{ formatEraDate(era, 'end') }}
+              </p>
+              <p v-if="era.startDateType === 'Relative' || era.endDateType === 'Relative'" class="text-xs italic text-gray-500">
+                (Contains relative dates)
               </p>
             </div>
           </div>
@@ -117,8 +120,28 @@ const showingTimeline = reactive({})
 const loadingTimelines = reactive({})
 const eraTimelines = reactive({})
 
-function formatDate(date) {
+function formatEraDate(era, type) {
+  // type is 'start' or 'end'
+  const dateType = type === 'start' ? era.startDateType : era.endDateType
+
+  if (dateType === 'Approximation') {
+    const desc = type === 'start' ? era.startApproximateDescription : era.endApproximateDescription
+    return desc || 'Unknown'
+  }
+
+  // For exact or relative dates, use the calculated or direct date
+  const calculatedDate = type === 'start' ? era.startCalculatedExactDate : era.endCalculatedExactDate
+  const directDate = type === 'start' ? era.startDate : era.endDate
+  const displayYear = type === 'start' ? era.startDisplayYear : era.endDisplayYear
+
+  const date = calculatedDate || directDate
+
+  if (!date && displayYear) {
+    return `Year ${displayYear}`
+  }
+
   if (!date) return 'Unknown'
+
   let result = `Year ${date.year}`
   if (date.month) {
     result += `, Month ${date.month}`
