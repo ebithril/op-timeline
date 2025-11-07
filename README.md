@@ -159,7 +159,7 @@ The API provides REST endpoints for managing events, characters, arcs, sagas, er
 
 For complete API documentation with interactive examples, visit the **Swagger UI** at http://localhost:8080/swagger once the backend is running.
 
-The OpenAPI specification is **automatically generated from code** using [Kompendium](https://github.com/bkbnio/kompendium), ensuring documentation always stays in sync with the actual implementation.
+The OpenAPI specification is maintained in `src/main/resources/openapi/documentation.yaml` and served via Ktor's built-in OpenAPI plugin.
 
 ## User Roles
 

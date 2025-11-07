@@ -1,0 +1,747 @@
+openapi: 3.0.3
+info:
+  title: One Piece Timeline API
+  description: |
+    A collaborative wiki-style timeline API for tracking events in the One Piece manga.
+
+    ## Authentication
+    Most write operations require authentication via API key in the `X-API-Key` header.
+
+    ## User Roles
+    - **Viewer**: Can view all content but cannot make changes
+    - **Editor**: Can create and edit events and characters
+    - **Admin**: Full access including delete, revert, and user management
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - ApiKeyAuth: []
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+
+paths:
+  # Events
+  /api/events:
+    get:
+      tags: [Events]
+      summary: Get all events
+      security: []
+      responses:
+        '200':
+          description: List of all events
+        '500':
+          description: Internal server error
+    post:
+      tags: [Events]
+      summary: Create new event
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Event created
+        '401':
+          description: Unauthorized
+
+  /api/events/{id}:
+    get:
+      tags: [Events]
+      summary: Get event by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event details
+        '404':
+          description: Event not found
+    put:
+      tags: [Events]
+      summary: Update event
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Events]
+      summary: Delete event
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Event deleted
+        '401':
+          description: Unauthorized
+
+  /api/events/character/{name}:
+    get:
+      tags: [Events]
+      summary: Get events by character
+      security: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of events involving the character
+
+  /api/events/{id}/children:
+    get:
+      tags: [Events]
+      summary: Get child events
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of child events
+
+  /api/events/{id}/timeline:
+    get:
+      tags: [Events]
+      summary: Get event timeline
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline of child events
+
+  /api/events/{id}/history:
+    get:
+      tags: [Events]
+      summary: Get event version history
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of event versions
+
+  /api/events/{id}/revert/{version}:
+    post:
+      tags: [Events]
+      summary: Revert event to previous version
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: version
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event reverted
+        '401':
+          description: Unauthorized
+
+  # Characters
+  /api/characters:
+    get:
+      tags: [Characters]
+      summary: Get all characters
+      security: []
+      responses:
+        '200':
+          description: List of all characters
+    post:
+      tags: [Characters]
+      summary: Create new character
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Character created
+        '401':
+          description: Unauthorized
+
+  /api/characters/{id}:
+    get:
+      tags: [Characters]
+      summary: Get character by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character details
+        '404':
+          description: Character not found
+    put:
+      tags: [Characters]
+      summary: Update character
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Characters]
+      summary: Delete character
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Character deleted
+        '401':
+          description: Unauthorized
+
+  /api/characters/search/{query}:
+    get:
+      tags: [Characters]
+      summary: Search characters by name
+      security: []
+      parameters:
+        - name: query
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of matching characters
+
+  /api/characters/{id}/timeline:
+    get:
+      tags: [Characters]
+      summary: Get character timeline
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline of events involving this character
+
+  /api/characters/alive-at/{date}:
+    get:
+      tags: [Characters]
+      summary: Get characters alive at specific date
+      security: []
+      parameters:
+        - name: date
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Date in format year-month-day
+      responses:
+        '200':
+          description: List of characters alive at the date
+
+  # Arcs
+  /api/arcs:
+    get:
+      tags: [Arcs]
+      summary: Get all arcs
+      security: []
+      responses:
+        '200':
+          description: List of all arcs
+    post:
+      tags: [Arcs]
+      summary: Create new arc
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Arc created
+        '401':
+          description: Unauthorized
+
+  /api/arcs/{id}:
+    get:
+      tags: [Arcs]
+      summary: Get arc by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Arc details
+        '404':
+          description: Arc not found
+    put:
+      tags: [Arcs]
+      summary: Update arc
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Arc updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Arcs]
+      summary: Delete arc
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Arc deleted
+        '401':
+          description: Unauthorized
+
+  /api/arcs/saga/{sagaId}:
+    get:
+      tags: [Arcs]
+      summary: Get arcs by saga
+      security: []
+      parameters:
+        - name: sagaId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of arcs in the saga
+
+  /api/arcs/{id}/timeline:
+    get:
+      tags: [Arcs]
+      summary: Get arc timeline
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline of events in the arc
+
+  # Sagas
+  /api/sagas:
+    get:
+      tags: [Sagas]
+      summary: Get all sagas
+      security: []
+      responses:
+        '200':
+          description: List of all sagas
+    post:
+      tags: [Sagas]
+      summary: Create new saga
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Saga created
+        '401':
+          description: Unauthorized
+
+  /api/sagas/{id}:
+    get:
+      tags: [Sagas]
+      summary: Get saga by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saga details
+        '404':
+          description: Saga not found
+    put:
+      tags: [Sagas]
+      summary: Update saga
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saga updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Sagas]
+      summary: Delete saga
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Saga deleted
+        '401':
+          description: Unauthorized
+
+  /api/sagas/{id}/timeline:
+    get:
+      tags: [Sagas]
+      summary: Get saga timeline
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline of all events in the saga
+
+  # Eras
+  /api/eras:
+    get:
+      tags: [Eras]
+      summary: Get all eras
+      security: []
+      responses:
+        '200':
+          description: List of all eras
+    post:
+      tags: [Eras]
+      summary: Create new era
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Era created
+        '401':
+          description: Unauthorized
+
+  /api/eras/{id}:
+    get:
+      tags: [Eras]
+      summary: Get era by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Era details
+        '404':
+          description: Era not found
+    put:
+      tags: [Eras]
+      summary: Update era
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Era updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Eras]
+      summary: Delete era
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Era deleted
+        '401':
+          description: Unauthorized
+
+  /api/eras/{id}/timeline:
+    get:
+      tags: [Eras]
+      summary: Get era timeline
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Timeline of events in the era
+
+  # Locations
+  /api/locations:
+    get:
+      tags: [Locations]
+      summary: Get all locations
+      security: []
+      responses:
+        '200':
+          description: List of all locations
+    post:
+      tags: [Locations]
+      summary: Create new location
+      description: Requires Editor or Admin role
+      responses:
+        '201':
+          description: Location created
+        '401':
+          description: Unauthorized
+
+  /api/locations/{id}:
+    get:
+      tags: [Locations]
+      summary: Get location by ID
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Location details
+        '404':
+          description: Location not found
+    put:
+      tags: [Locations]
+      summary: Update location
+      description: Requires Editor or Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Location updated
+        '401':
+          description: Unauthorized
+    delete:
+      tags: [Locations]
+      summary: Delete location
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Location deleted
+        '401':
+          description: Unauthorized
+
+  /api/locations/{id}/hierarchy:
+    get:
+      tags: [Locations]
+      summary: Get location hierarchy
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Hierarchy of locations
+
+  /api/locations/{id}/children:
+    get:
+      tags: [Locations]
+      summary: Get child locations
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of child locations
+
+  /api/locations/{id}/events:
+    get:
+      tags: [Locations]
+      summary: Get events at location
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of events at this location
+
+  # Users
+  /api/users/me:
+    get:
+      tags: [Users]
+      summary: Get current user info
+      responses:
+        '200':
+          description: Current user information
+        '401':
+          description: Unauthorized
+
+  /api/users:
+    get:
+      tags: [Users]
+      summary: Get all users
+      description: Requires Admin role
+      responses:
+        '200':
+          description: List of all users
+        '401':
+          description: Unauthorized
+    post:
+      tags: [Users]
+      summary: Create new user
+      description: Requires Admin role
+      responses:
+        '201':
+          description: User created with generated API key
+        '401':
+          description: Unauthorized
+
+  /api/users/{id}/role:
+    put:
+      tags: [Users]
+      summary: Update user role
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User role updated
+        '401':
+          description: Unauthorized
+
+  /api/users/{id}:
+    delete:
+      tags: [Users]
+      summary: Deactivate user
+      description: Requires Admin role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: User deactivated
+        '401':
+          description: Unauthorized
+
+tags:
+  - name: Events
+    description: Event management endpoints
+  - name: Characters
+    description: Character management endpoints
+  - name: Arcs
+    description: Story arc management endpoints
+  - name: Sagas
+    description: Saga management endpoints
+  - name: Eras
+    description: Historical era management endpoints
+  - name: Locations
+    description: Location management endpoints
+  - name: Users
+    description: User management endpoints
