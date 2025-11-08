@@ -35,6 +35,10 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-config-yaml")
 
+    // OpenAPI and Swagger UI
+    implementation("io.ktor:ktor-server-openapi")
+    implementation("io.ktor:ktor-server-swagger-ui")
+
     // MongoDB
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine:5.2.1")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:5.1.0")

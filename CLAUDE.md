@@ -59,6 +59,21 @@ db.users.insertOne({
 })
 ```
 
+### API Documentation
+The project includes OpenAPI 3.0.3 specification and Swagger UI for interactive API documentation:
+
+**Swagger UI** (http://localhost:8080/swagger)
+- Interactive web interface for testing API endpoints
+- Browse all available endpoints with request/response schemas
+- Test API calls directly from the browser with authentication support
+
+**OpenAPI Spec** (http://localhost:8080/openapi)
+- Raw OpenAPI 3.0.3 specification in JSON format
+- Can be imported into API tools (Postman, Insomnia, etc.)
+- Useful for generating client SDKs
+
+The specification file is located at `src/main/resources/openapi/documentation.yaml`. See `OPENAPI_SETUP.md` for detailed documentation.
+
 ## Architecture
 
 ### Backend Structure

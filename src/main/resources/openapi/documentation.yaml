@@ -1,0 +1,928 @@
+openapi: 3.0.3
+info:
+  title: One Piece Timeline API
+  description: A collaborative wiki-style timeline application for tracking One Piece manga events with full version history, source verification, and character filtering.
+  version: 1.0.0
+  contact:
+    name: One Piece Timeline
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication. Required for create, update, and delete operations.
+
+  schemas:
+    Event:
+      type: object
+      required:
+        - name
+        - type
+        - description
+        - dateType
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the event
+        name:
+          type: string
+          description: Name of the event
+        type:
+          type: string
+          enum: [Birth, Death, Fight, Event, Meeting, Discovery]
+          description: Type of event
+        description:
+          type: string
+          description: Detailed description of the event
+        arcId:
+          type: string
+          description: Reference to the arc where this event occurs
+        parentEventId:
+          type: string
+          description: Reference to parent event for hierarchical events
+        locationId:
+          type: string
+          description: Reference to location where event occurred
+        dateType:
+          type: string
+          enum: [Approximation, Exact, Relative]
+          description: Type of date specification
+        exactDate:
+          $ref: '#/components/schemas/ExactDate'
+        relativeEventId:
+          type: string
+          description: Reference to another event (for relative dates)
+        relativeOffset:
+          type: integer
+          description: How many units before/after (negative = before, positive = after)
+        relativeTimeUnit:
+          type: string
+          enum: [Minutes, Hours, Days, Weeks, Months, Years]
+          description: The unit of time
+        relativeDirection:
+          type: string
+          enum: [Before, After]
+          description: Direction for vague dates
+        approximateDescription:
+          type: string
+          description: Description for approximate dates
+        calculatedAbsoluteDate:
+          type: number
+          format: double
+          description: Calculated absolute date (in days from year 0)
+        calculatedExactDate:
+          $ref: '#/components/schemas/ExactDate'
+        displayYear:
+          type: integer
+          description: Display year for the frontend
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/Source'
+        involvedCharacters:
+          type: array
+          items:
+            type: string
+          description: List of character names involved in this event
+        charactersBorn:
+          type: array
+          items:
+            type: string
+          description: Characters born during this event
+        charactersDied:
+          type: array
+          items:
+            type: string
+          description: Characters who died during this event
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation timestamp
+        createdBy:
+          type: string
+          description: Username who created the event
+        updatedAt:
+          type: integer
+          format: int64
+          description: Last update timestamp
+        updatedBy:
+          type: string
+          description: Username who last updated the event
+        version:
+          type: integer
+          description: Version number for version history
+        isDeleted:
+          type: boolean
+          description: Soft delete flag
+
+    ExactDate:
+      type: object
+      required:
+        - year
+      properties:
+        year:
+          type: integer
+          description: Year of the date
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+          description: Month (1-12)
+        day:
+          type: integer
+          minimum: 1
+          maximum: 31
+          description: Day (1-31)
+
+    Source:
+      type: object
+      required:
+        - sourceType
+      properties:
+        sourceType:
+          type: string
+          enum: [VivreCard, Chapter, SBS, DataBook]
+          description: Type of source
+        notes:
+          type: string
+          description: Additional notes about the source
+        isPrimary:
+          type: boolean
+          description: Whether this is a primary source
+        url:
+          type: string
+          description: URL to the source
+        chapter:
+          type: integer
+          description: Chapter number
+        page:
+          type: integer
+          description: Page number
+
+    Character:
+      type: object
+      required:
+        - name
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the character
+        name:
+          type: string
+          description: Character name
+        aliases:
+          type: array
+          items:
+            type: string
+          description: List of character aliases
+        birthEventId:
+          type: string
+          description: Reference to birth event
+        deathEventId:
+          type: string
+          description: Reference to death event
+        calculatedBirthDate:
+          type: number
+          format: double
+          description: Calculated birth date (in days from year 0)
+        calculatedDeathDate:
+          type: number
+          format: double
+          description: Calculated death date (in days from year 0)
+        birthYear:
+          type: integer
+          description: Birth year for display
+        deathYear:
+          type: integer
+          description: Death year for display
+
+    Arc:
+      type: object
+      required:
+        - name
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the arc
+        name:
+          type: string
+          description: Arc name
+        sagaId:
+          type: string
+          description: Reference to the saga this arc belongs to
+        startChapter:
+          type: integer
+          description: Starting chapter number
+        endChapter:
+          type: integer
+          description: Ending chapter number
+
+    Saga:
+      type: object
+      required:
+        - name
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the saga
+        name:
+          type: string
+          description: Saga name
+        description:
+          type: string
+          description: Saga description
+
+    User:
+      type: object
+      required:
+        - username
+        - role
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the user
+        username:
+          type: string
+          description: Username
+        apiKey:
+          type: string
+          description: API key for authentication (only returned when creating)
+        role:
+          type: string
+          enum: [Viewer, Editor, Admin]
+          description: User role
+        createdAt:
+          type: integer
+          format: int64
+          description: Creation timestamp
+        isActive:
+          type: boolean
+          description: Whether the user account is active
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+
+paths:
+  /api/events:
+    get:
+      summary: Get all events
+      description: Returns a list of all events (public endpoint)
+      tags:
+        - Events
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new event
+      description: Creates a new event (requires Editor or Admin role)
+      tags:
+        - Events
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '201':
+          description: Event created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/events/{id}:
+    get:
+      summary: Get event by ID
+      description: Returns a single event by ID (public endpoint)
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update an event
+      description: Updates an existing event (requires Editor or Admin role)
+      tags:
+        - Events
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: Event updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete an event
+      description: Soft deletes an event (requires Admin role)
+      tags:
+        - Events
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Event ID
+      responses:
+        '200':
+          description: Event deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Event not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/events/character/{name}:
+    get:
+      summary: Get events by character
+      description: Returns all events involving a specific character (public endpoint)
+      tags:
+        - Events
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character name
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/events/{id}/children:
+    get:
+      summary: Get child events
+      description: Returns all child events of a parent event (public endpoint)
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Parent event ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/characters:
+    get:
+      summary: Get all characters
+      description: Returns a list of all characters (public endpoint)
+      tags:
+        - Characters
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Character'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new character
+      description: Creates a new character (requires Editor or Admin role)
+      tags:
+        - Characters
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Character'
+      responses:
+        '201':
+          description: Character created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/characters/{id}:
+    get:
+      summary: Get character by ID
+      description: Returns a single character by ID (public endpoint)
+      tags:
+        - Characters
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character ID
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Update a character
+      description: Updates an existing character (requires Editor or Admin role)
+      tags:
+        - Characters
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Character'
+      responses:
+        '200':
+          description: Character updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Character'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Delete a character
+      description: Deletes a character (requires Admin role)
+      tags:
+        - Characters
+      security:
+        - ApiKeyAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Character ID
+      responses:
+        '200':
+          description: Character deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Character not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/arcs:
+    get:
+      summary: Get all arcs
+      description: Returns a list of all arcs (public endpoint)
+      tags:
+        - Arcs
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Arc'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new arc
+      description: Creates a new arc (requires Editor or Admin role)
+      tags:
+        - Arcs
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Arc'
+      responses:
+        '201':
+          description: Arc created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Arc'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/sagas:
+    get:
+      summary: Get all sagas
+      description: Returns a list of all sagas (public endpoint)
+      tags:
+        - Sagas
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Saga'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new saga
+      description: Creates a new saga (requires Editor or Admin role)
+      tags:
+        - Sagas
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Saga'
+      responses:
+        '201':
+          description: Saga created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Saga'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/users:
+    get:
+      summary: Get all users
+      description: Returns a list of all users (requires Admin role)
+      tags:
+        - Users
+      security:
+        - ApiKeyAuth: []
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Create a new user
+      description: Creates a new user (requires Admin role)
+      tags:
+        - Users
+      security:
+        - ApiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /metrics:
+    get:
+      summary: Get Prometheus metrics
+      description: Returns Prometheus metrics for monitoring
+      tags:
+        - Monitoring
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/plain:
+              schema:
+                type: string
+
+tags:
+  - name: Events
+    description: Event management endpoints
+  - name: Characters
+    description: Character management endpoints
+  - name: Arcs
+    description: Arc management endpoints
+  - name: Sagas
+    description: Saga management endpoints
+  - name: Users
+    description: User management endpoints
+  - name: Monitoring
+    description: Monitoring and metrics endpoints

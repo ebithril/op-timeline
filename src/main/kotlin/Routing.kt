@@ -9,6 +9,8 @@ import com.routes.sagaRoutes
 import com.routes.userRoutes
 import io.ktor.server.application.*
 import io.ktor.server.http.content.*
+import io.ktor.server.plugins.openapi.*
+import io.ktor.server.plugins.swaggerui.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.*
@@ -21,6 +23,10 @@ fun Application.configureRouting() {
 	    val registry = application.attributes[AttributeKey<PrometheusMeterRegistry>("prometheus.registry")]
 	    call.respondText(registry.scrape())
 	}
+
+	// OpenAPI and Swagger UI endpoints
+	openAPI(path = "openapi", swaggerFile = "openapi/documentation.yaml")
+	swaggerUI(path = "swagger", swaggerFile = "openapi/documentation.yaml")
 
 	// Serve frontend files from static/dist
 	staticResources("/", "static/dist")
