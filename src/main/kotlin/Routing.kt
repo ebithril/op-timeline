@@ -24,11 +24,11 @@ fun Application.configureRouting() {
 	    call.respondText(registry.scrape())
 	}
 
-	// OpenAPI spec endpoint
-	openAPI(path = "openapi", swaggerFile = "openapi/documentation.yaml")
+	// OpenAPI specification endpoint
+	openAPI(path = "openapi")
 
 	// Swagger UI for interactive API documentation
-	swaggerUI(path = "swagger", swaggerFile = "openapi/documentation.yaml")
+	swaggerUI(path = "swagger")
 
 	// Serve frontend files from static/dist
 	staticResources("/", "static/dist")
