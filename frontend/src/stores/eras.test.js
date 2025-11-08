@@ -27,6 +27,49 @@ describe('useErasStore', () => {
       ])
     })
 
+    it('sorts by calculated absolute date (highest priority)', () => {
+      const store = useErasStore()
+      store.eras = [
+        { _id: '1', name: 'Era C', startCalculatedAbsoluteDate: 730000, startDisplayYear: 2000 },
+        { _id: '2', name: 'Era A', startCalculatedAbsoluteDate: 182500, startDisplayYear: 500 },
+        { _id: '3', name: 'Era B', startCalculatedAbsoluteDate: 547500, startDisplayYear: 1500 },
+      ]
+
+      expect(store.sortedEras).toEqual([
+        { _id: '2', name: 'Era A', startCalculatedAbsoluteDate: 182500, startDisplayYear: 500 },
+        { _id: '3', name: 'Era B', startCalculatedAbsoluteDate: 547500, startDisplayYear: 1500 },
+        { _id: '1', name: 'Era C', startCalculatedAbsoluteDate: 730000, startDisplayYear: 2000 },
+      ])
+    })
+
+    it('falls back to displayYear when absolute dates not available', () => {
+      const store = useErasStore()
+      store.eras = [
+        { _id: '1', name: 'Era C', startDisplayYear: 1700 },
+        { _id: '2', name: 'Era A', startDisplayYear: 500 },
+        { _id: '3', name: 'Era B', startDisplayYear: 1500 },
+      ]
+
+      expect(store.sortedEras).toEqual([
+        { _id: '2', name: 'Era A', startDisplayYear: 500 },
+        { _id: '3', name: 'Era B', startDisplayYear: 1500 },
+        { _id: '1', name: 'Era C', startDisplayYear: 1700 },
+      ])
+    })
+
+    it('sorts eras with mixed date types correctly', () => {
+      const store = useErasStore()
+      store.eras = [
+        { _id: '1', name: 'Relative Era', startCalculatedAbsoluteDate: 547500, startDisplayYear: 1500 },
+        { _id: '2', name: 'Exact Era', startDate: { year: 500 }, startDisplayYear: 500 },
+        { _id: '3', name: 'Approximation Era', startDisplayYear: null },
+      ]
+
+      expect(store.sortedEras[0].name).toBe('Approximation Era') // No display year = 0
+      expect(store.sortedEras[1].name).toBe('Exact Era') // Year 500
+      expect(store.sortedEras[2].name).toBe('Relative Era') // Year 1500
+    })
+
     it('sorts by month when years are equal', () => {
       const store = useErasStore()
       store.eras = [
@@ -58,6 +101,28 @@ describe('useErasStore', () => {
 
       expect(store.sortedEras[0].name).toBe('Era A')
       expect(store.sortedEras[1].name).toBe('Era B')
+    })
+
+    it('sorts by calculated exact date when available', () => {
+      const store = useErasStore()
+      store.eras = [
+        { _id: '1', name: 'Era B', startCalculatedExactDate: { year: 1500, month: 6, day: 1 }, startDisplayYear: 1500 },
+        { _id: '2', name: 'Era A', startCalculatedExactDate: { year: 1500, month: 1, day: 1 }, startDisplayYear: 1500 },
+      ]
+
+      expect(store.sortedEras[0].name).toBe('Era A')
+      expect(store.sortedEras[1].name).toBe('Era B')
+    })
+
+    it('prefers calculated exact date over direct start date', () => {
+      const store = useErasStore()
+      store.eras = [
+        { _id: '1', name: 'Relative Era', startCalculatedExactDate: { year: 1500, month: 1, day: 1 }, startDisplayYear: 1500 },
+        { _id: '2', name: 'Exact Era', startDate: { year: 1500, month: 6, day: 1 }, startDisplayYear: 1500 },
+      ]
+
+      expect(store.sortedEras[0].name).toBe('Relative Era') // Month 1 comes before month 6
+      expect(store.sortedEras[1].name).toBe('Exact Era')
     })
   })
 
