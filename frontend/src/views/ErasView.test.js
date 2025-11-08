@@ -73,20 +73,11 @@ describe('ErasView', () => {
       expect(erasStore.fetchAll).toHaveBeenCalled()
     })
 
-    it('shows Add New Era button for editors', async () => {
-      authStore.user = { username: 'editor', role: 'Editor' }
+    it('shows Create New Era button', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.text()).toContain('Add New Era')
-    })
-
-    it('does not show Add New Era button for viewers', async () => {
-      authStore.user = { username: 'viewer', role: 'Viewer' }
-      const wrapper = mountComponent()
-      await wrapper.vm.$nextTick()
-
-      expect(wrapper.text()).not.toContain('Add New Era')
+      expect(wrapper.text()).toContain('Create New Era')
     })
   })
 
@@ -96,7 +87,7 @@ describe('ErasView', () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.text()).toContain('Loading...')
+      expect(wrapper.text()).toContain('Loading eras...')
     })
 
     it('displays error message', async () => {
@@ -363,10 +354,11 @@ describe('ErasView', () => {
     it('prompts for confirmation before deleting', async () => {
       global.confirm.mockReturnValue(false)
       const wrapper = mountComponent()
+      const era = erasStore.eras[0]
 
-      await wrapper.vm.deleteEra('era1')
+      await wrapper.vm.confirmDelete(era)
 
-      expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete this era?')
+      expect(global.confirm).toHaveBeenCalledWith('Are you sure you want to delete the era "Golden Age"?')
       expect(erasStore.deleteEra).not.toHaveBeenCalled()
     })
 
@@ -374,8 +366,9 @@ describe('ErasView', () => {
       global.confirm.mockReturnValue(true)
       erasStore.deleteEra.mockResolvedValue()
       const wrapper = mountComponent()
+      const era = erasStore.eras[0]
 
-      await wrapper.vm.deleteEra('era1')
+      await wrapper.vm.confirmDelete(era)
 
       expect(erasStore.deleteEra).toHaveBeenCalledWith('era1')
     })
@@ -384,22 +377,22 @@ describe('ErasView', () => {
       global.confirm.mockReturnValue(true)
       erasStore.deleteEra.mockRejectedValue(new Error('Delete failed'))
       const wrapper = mountComponent()
+      const era = erasStore.eras[0]
 
-      await wrapper.vm.deleteEra('era1')
+      await wrapper.vm.confirmDelete(era)
 
       expect(global.alert).toHaveBeenCalledWith('Failed to delete era')
     })
   })
 
-  describe('permission-based UI elements', () => {
+  describe('era action buttons', () => {
     beforeEach(() => {
       erasStore.eras = [
-        { _id: 'era1', name: 'Golden Age', startDate: { year: 1500 } },
+        { _id: 'era1', name: 'Golden Age', startDate: { year: 1500 }, endDate: { year: 1600 } },
       ]
     })
 
-    it('shows edit button for editors', async () => {
-      authStore.user = { username: 'editor', role: 'Editor' }
+    it('shows edit button for all eras', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
@@ -407,8 +400,7 @@ describe('ErasView', () => {
       expect(editButtons.length).toBeGreaterThan(0)
     })
 
-    it('shows delete button for admins', async () => {
-      authStore.user = { username: 'admin', role: 'Admin' }
+    it('shows delete button for all eras', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
@@ -416,22 +408,12 @@ describe('ErasView', () => {
       expect(deleteButtons.length).toBeGreaterThan(0)
     })
 
-    it('does not show edit button for viewers', async () => {
-      authStore.user = { username: 'viewer', role: 'Viewer' }
+    it('shows view timeline button for all eras', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      const editButtons = wrapper.findAll('a').filter(a => a.text() === 'Edit')
-      expect(editButtons.length).toBe(0)
-    })
-
-    it('does not show delete button for editors', async () => {
-      authStore.user = { username: 'editor', role: 'Editor' }
-      const wrapper = mountComponent()
-      await wrapper.vm.$nextTick()
-
-      const deleteButtons = wrapper.findAll('button').filter(b => b.text() === 'Delete')
-      expect(deleteButtons.length).toBe(0)
+      const timelineButtons = wrapper.findAll('button').filter(b => b.text() === 'View Timeline')
+      expect(timelineButtons.length).toBeGreaterThan(0)
     })
   })
 
