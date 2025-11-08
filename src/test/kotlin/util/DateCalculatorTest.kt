@@ -598,7 +598,6 @@ class DateCalculatorTest {
 
         result.shouldBeNull()
     }
-}
 
     // Test Era date calculations
 
