@@ -132,5 +132,17 @@ fun Route.eraRoutes() {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to delete era: ${e.message}"))
 			}
 		}
+
+		// Migrate old eras (admin only)
+		post("/migrate") {
+			val user = call.requireAdmin(authMiddleware) ?: return@post
+
+			try {
+				val count = eraRepository.migrateOldEras()
+				call.respond(HttpStatusCode.OK, mapOf("message" to "Migrated $count eras", "count" to count))
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to migrate eras: ${e.message}"))
+			}
+		}
 	}
 }

@@ -14,6 +14,7 @@ import org.bson.types.ObjectId
 class EraRepository(private val eventRepository: EventRepository) {
 	private val database = DatabaseConfig.getDatabase()
 	private val erasCollection: MongoCollection<Era> = database.getCollection("eras")
+	private val rawErasCollection = database.getCollection<org.bson.Document>("eras")
 
 	suspend fun findAll(): List<Era> {
 		// Sort by calculated absolute date first, then by exact date fields as fallback
@@ -189,5 +190,40 @@ class EraRepository(private val eventRepository: EventRepository) {
 		val era = findById(id) ?: return false
 		erasCollection.deleteOne(Filters.eq("_id", era._id))
 		return true
+	}
+
+	/**
+	 * Migrate old eras to include new date type fields
+	 * This should be called once to update existing eras in the database
+	 */
+	suspend fun migrateOldEras(): Int {
+		var count = 0
+		val eras = rawErasCollection.find().toList()
+
+		for (doc in eras) {
+			var needsUpdate = false
+
+			// Add startDateType if missing
+			if (!doc.containsKey("startDateType")) {
+				doc["startDateType"] = "Exact"
+				needsUpdate = true
+			}
+
+			// Add endDateType if missing
+			if (!doc.containsKey("endDateType")) {
+				doc["endDateType"] = "Exact"
+				needsUpdate = true
+			}
+
+			if (needsUpdate) {
+				rawErasCollection.replaceOne(
+					Filters.eq("_id", doc.getObjectId("_id")),
+					doc
+				)
+				count++
+			}
+		}
+
+		return count
 	}
 }
