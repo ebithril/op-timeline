@@ -66,7 +66,7 @@ export function useDateInput() {
 
   // Computed property for the full date object
   const dateObject = computed(() => {
-    if (dateYear.value) {
+    if (dateYear.value != null) {
       return {
         year: dateYear.value,
         month: dateMonth.value || null,
@@ -82,6 +82,11 @@ export function useDateInput() {
       dateYear.value = date.year || null
       dateMonth.value = date.month || null
       dateDay.value = date.day || null
+
+      // Update relative offset to stay in sync when loading dates
+      if (dateYear.value != null && referenceYear.value != null) {
+        relativeYearOffset.value = absoluteToRelative(dateYear.value, referenceYear.value)
+      }
     }
   }
 

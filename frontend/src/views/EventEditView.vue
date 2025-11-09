@@ -483,7 +483,7 @@ const offsetAmount = computed({
 
 // Watch date components and update eventData
 watch([exactDateYear, exactDateMonth, exactDateDay], () => {
-  if (exactDateYear.value) {
+  if (exactDateYear.value != null) {
     eventData.value.exactDate = {
       year: exactDateYear.value,
       month: exactDateMonth.value || null,
@@ -520,8 +520,10 @@ watch([vagueOffsetAmount, relativeDirection], () => {
 // Watch selected relative event/era
 watch([selectedRelativeEra, selectedRelativeEvent], () => {
   if (relativeType.value === 'era' && selectedRelativeEra.value) {
+    // CRITICAL: Backend doesn't support relativeEraId for events yet
+    // For now, we log a warning. This should be fixed in the backend.
+    console.warn('Era-relative dates are not yet supported for events. Please use event-relative dates instead.')
     eventData.value.relativeEventId = null
-    // Note: Events don't support relativeEraId in the backend
   } else if (relativeType.value === 'event' && selectedRelativeEvent.value) {
     eventData.value.relativeEventId = selectedRelativeEvent.value._id
   }
@@ -573,6 +575,26 @@ const eventData = ref({
   locationId: null,
   involvedCharacters: [],
   sources: [{ sourceType: 'Chapter', notes: '', isPrimary: true, chapter: null, page: null, url: '' }],
+})
+
+// Watch dateType to clean up stale data when switching
+watch(() => eventData.value.dateType, (newType, oldType) => {
+  // Only clean up if we're actually switching types (oldType is defined and different)
+  if (oldType !== undefined && oldType !== newType) {
+    // Clear data from previous date type to prevent stale data
+    if (newType !== 'Exact') {
+      eventData.value.exactDate = null
+    }
+    if (newType !== 'Relative') {
+      eventData.value.relativeEventId = null
+      eventData.value.relativeOffset = null
+      eventData.value.relativeDirection = null
+      eventData.value.relativeTimeUnit = 'Days'
+    }
+    if (newType !== 'Approximation') {
+      eventData.value.approximateDescription = null
+    }
+  }
 })
 
 // Stub refs for test compatibility (DateInput handles these internally now)
