@@ -13,8 +13,8 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 
 fun Route.eraRoutes() {
-	val eraRepository = EraRepository()
 	val eventRepository = EventRepository()
+	val eraRepository = EraRepository(eventRepository)
 	val authMiddleware = AuthMiddleware()
 
 	route("/api/eras") {
@@ -61,7 +61,16 @@ fun Route.eraRoutes() {
 					return@get
 				}
 
-				val events = eventRepository.findByDateRange(era.startDate, era.endDate)
+				// Use calculated exact dates if available, otherwise use direct dates
+				val startDate = era.startCalculatedExactDate ?: era.startDate
+				val endDate = era.endCalculatedExactDate ?: era.endDate
+
+				if (startDate == null || endDate == null) {
+					call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Era dates could not be calculated"))
+					return@get
+				}
+
+				val events = eventRepository.findByDateRange(startDate, endDate)
 				call.respond(HttpStatusCode.OK, events)
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch era timeline: ${e.message}"))
@@ -121,6 +130,18 @@ fun Route.eraRoutes() {
 				}
 			} catch (e: Exception) {
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to delete era: ${e.message}"))
+			}
+		}
+
+		// Migrate old eras (admin only)
+		post("/migrate") {
+			val user = call.requireAdmin(authMiddleware) ?: return@post
+
+			try {
+				val count = eraRepository.migrateOldEras()
+				call.respond(HttpStatusCode.OK, mapOf("message" to "Migrated $count eras", "count" to count))
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to migrate eras: ${e.message}"))
 			}
 		}
 	}

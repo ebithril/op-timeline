@@ -5,7 +5,7 @@
     </h1>
 
     <!-- Loading State -->
-    <div v-if="erasStore.loading" class="text-center py-8">
+    <div v-if="erasStore.loading || eventsStore.loading" class="text-center py-8">
       <p class="text-gray-600">Loading...</p>
     </div>
 
@@ -39,82 +39,70 @@
         ></textarea>
       </div>
 
-      <!-- Start Date -->
-      <div class="mb-6">
-        <label class="block text-sm font-semibold mb-2">Start Date *</label>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Year *</label>
-            <input
-              v-model.number="eraData.startDate.year"
-              type="number"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="1500"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Month (1-12)</label>
-            <input
-              v-model.number="eraData.startDate.month"
-              type="number"
-              min="1"
-              max="12"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="1"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Day (1-31)</label>
-            <input
-              v-model.number="eraData.startDate.day"
-              type="number"
-              min="1"
-              max="31"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="1"
-            />
-          </div>
-        </div>
+      <!-- START DATE using DateInput Component -->
+      <div class="mb-8">
+        <DateInput
+          label="Start Date"
+          :date-type="eraData.startDateType"
+          @update:date-type="eraData.startDateType = $event"
+          :exact-year="startExactYear"
+          @update:exact-year="startExactYear = $event"
+          :exact-month="startExactMonth"
+          @update:exact-month="startExactMonth = $event"
+          :exact-day="startExactDay"
+          @update:exact-day="startExactDay = $event"
+          :relative-type="startRelativeType"
+          @update:relative-type="startRelativeType = $event"
+          :selected-relative-era="selectedStartRelativeEra"
+          @update:selected-relative-era="selectedStartRelativeEra = $event"
+          :selected-relative-event="selectedStartRelativeEvent"
+          @update:selected-relative-event="selectedStartRelativeEvent = $event"
+          :offset-amount="startOffsetAmount"
+          @update:offset-amount="startOffsetAmount = $event"
+          :direction="startDirection"
+          @update:direction="startDirection = $event"
+          :time-unit="startTimeUnit"
+          @update:time-unit="startTimeUnit = $event"
+          :is-vague-relative="startIsVagueRelative"
+          @update:is-vague-relative="startIsVagueRelative = $event"
+          :approximate-description="startApproximateDescription"
+          @update:approximate-description="startApproximateDescription = $event"
+          :eras="erasStore.eras.filter(e => e._id !== eraId)"
+          :events="eventsStore.events"
+        />
       </div>
 
-      <!-- End Date -->
-      <div class="mb-6">
-        <label class="block text-sm font-semibold mb-2">End Date *</label>
-        <div class="grid grid-cols-3 gap-4">
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Year *</label>
-            <input
-              v-model.number="eraData.endDate.year"
-              type="number"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="1550"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Month (1-12)</label>
-            <input
-              v-model.number="eraData.endDate.month"
-              type="number"
-              min="1"
-              max="12"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="12"
-            />
-          </div>
-          <div>
-            <label class="block text-xs text-gray-600 mb-1">Day (1-31)</label>
-            <input
-              v-model.number="eraData.endDate.day"
-              type="number"
-              min="1"
-              max="31"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="31"
-            />
-          </div>
-        </div>
+      <!-- END DATE using DateInput Component -->
+      <div class="mb-8">
+        <DateInput
+          label="End Date"
+          :date-type="eraData.endDateType"
+          @update:date-type="eraData.endDateType = $event"
+          :exact-year="endExactYear"
+          @update:exact-year="endExactYear = $event"
+          :exact-month="endExactMonth"
+          @update:exact-month="endExactMonth = $event"
+          :exact-day="endExactDay"
+          @update:exact-day="endExactDay = $event"
+          :relative-type="endRelativeType"
+          @update:relative-type="endRelativeType = $event"
+          :selected-relative-era="selectedEndRelativeEra"
+          @update:selected-relative-era="selectedEndRelativeEra = $event"
+          :selected-relative-event="selectedEndRelativeEvent"
+          @update:selected-relative-event="selectedEndRelativeEvent = $event"
+          :offset-amount="endOffsetAmount"
+          @update:offset-amount="endOffsetAmount = $event"
+          :direction="endDirection"
+          @update:direction="endDirection = $event"
+          :time-unit="endTimeUnit"
+          @update:time-unit="endTimeUnit = $event"
+          :is-vague-relative="endIsVagueRelative"
+          @update:is-vague-relative="endIsVagueRelative = $event"
+          :approximate-description="endApproximateDescription"
+          @update:approximate-description="endApproximateDescription = $event"
+          :eras="erasStore.eras.filter(e => e._id !== eraId)"
+          :events="eventsStore.events"
+        />
       </div>
 
       <!-- Form Actions -->
@@ -140,10 +128,13 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useErasStore } from '../stores/eras'
+import { useEventsStore } from '../stores/events'
+import DateInput from '../components/DateInput.vue'
 
 const route = useRoute()
 const router = useRouter()
 const erasStore = useErasStore()
+const eventsStore = useEventsStore()
 
 const eraId = computed(() => route.params.id)
 const isNewEra = computed(() => !eraId.value || eraId.value === 'new')
@@ -151,87 +142,223 @@ const isNewEra = computed(() => !eraId.value || eraId.value === 'new')
 const eraData = ref({
   name: '',
   description: '',
-  startDate: {
-    year: null,
-    month: null,
-    day: null,
-  },
-  endDate: {
-    year: null,
-    month: null,
-    day: null,
-  },
+  startDateType: 'Exact',
+  endDateType: 'Exact',
 })
+
+// Start date UI state
+const startExactYear = ref(null)
+const startExactMonth = ref(null)
+const startExactDay = ref(null)
+const startRelativeType = ref('era')
+const selectedStartRelativeEra = ref(null)
+const selectedStartRelativeEvent = ref(null)
+const startIsVagueRelative = ref(false)
+const startOffsetAmount = ref(null)
+const startDirection = ref('After')
+const startTimeUnit = ref('Days')
+const startApproximateDescription = ref('')
+
+// End date UI state
+const endExactYear = ref(null)
+const endExactMonth = ref(null)
+const endExactDay = ref(null)
+const endRelativeType = ref('era')
+const selectedEndRelativeEra = ref(null)
+const selectedEndRelativeEvent = ref(null)
+const endIsVagueRelative = ref(false)
+const endOffsetAmount = ref(null)
+const endDirection = ref('After')
+const endTimeUnit = ref('Days')
+const endApproximateDescription = ref('')
+
+// Convert UI state to backend format
+function buildEraPayload() {
+  const payload = {
+    name: eraData.value.name,
+    startDateType: eraData.value.startDateType,
+    endDateType: eraData.value.endDateType,
+  }
+
+  if (eraData.value.description) {
+    payload.description = eraData.value.description
+  }
+
+  // Start date
+  if (eraData.value.startDateType === 'Exact') {
+    if (!startExactYear.value) {
+      throw new Error('Start year is required for exact dates')
+    }
+    payload.startDate = { year: startExactYear.value }
+    if (startExactMonth.value) payload.startDate.month = startExactMonth.value
+    if (startExactDay.value) payload.startDate.day = startExactDay.value
+  } else if (eraData.value.startDateType === 'Relative') {
+    if (startRelativeType.value === 'era' && selectedStartRelativeEra.value) {
+      payload.startRelativeEraId = selectedStartRelativeEra.value._id
+    } else if (startRelativeType.value === 'event' && selectedStartRelativeEvent.value) {
+      payload.startRelativeEventId = selectedStartRelativeEvent.value._id
+    } else {
+      throw new Error('Please select a reference for the start date')
+    }
+
+    if (!startIsVagueRelative.value && !startOffsetAmount.value) {
+      throw new Error('Start offset amount is required for non-vague relative dates')
+    }
+
+    if (startIsVagueRelative.value) {
+      payload.startRelativeDirection = startDirection.value
+    } else {
+      const signedOffset = startDirection.value === 'Before' ? -startOffsetAmount.value : startOffsetAmount.value
+      payload.startRelativeOffset = signedOffset
+    }
+    payload.startRelativeTimeUnit = startTimeUnit.value
+  } else if (eraData.value.startDateType === 'Approximation') {
+    if (!startApproximateDescription.value) {
+      throw new Error('Start approximate description is required')
+    }
+    payload.startApproximateDescription = startApproximateDescription.value
+  }
+
+  // End date
+  if (eraData.value.endDateType === 'Exact') {
+    if (!endExactYear.value) {
+      throw new Error('End year is required for exact dates')
+    }
+    payload.endDate = { year: endExactYear.value }
+    if (endExactMonth.value) payload.endDate.month = endExactMonth.value
+    if (endExactDay.value) payload.endDate.day = endExactDay.value
+  } else if (eraData.value.endDateType === 'Relative') {
+    if (endRelativeType.value === 'era' && selectedEndRelativeEra.value) {
+      payload.endRelativeEraId = selectedEndRelativeEra.value._id
+    } else if (endRelativeType.value === 'event' && selectedEndRelativeEvent.value) {
+      payload.endRelativeEventId = selectedEndRelativeEvent.value._id
+    } else {
+      throw new Error('Please select a reference for the end date')
+    }
+
+    if (!endIsVagueRelative.value && !endOffsetAmount.value) {
+      throw new Error('End offset amount is required for non-vague relative dates')
+    }
+
+    if (endIsVagueRelative.value) {
+      payload.endRelativeDirection = endDirection.value
+    } else {
+      const signedOffset = endDirection.value === 'Before' ? -endOffsetAmount.value : endOffsetAmount.value
+      payload.endRelativeOffset = signedOffset
+    }
+    payload.endRelativeTimeUnit = endTimeUnit.value
+  } else if (eraData.value.endDateType === 'Approximation') {
+    if (!endApproximateDescription.value) {
+      throw new Error('End approximate description is required')
+    }
+    payload.endApproximateDescription = endApproximateDescription.value
+  }
+
+  return payload
+}
 
 async function saveEra() {
   try {
-    // Validate that at least year is provided for both dates
-    if (!eraData.value.startDate.year || !eraData.value.endDate.year) {
-      alert('Start and end year are required')
-      return
-    }
-
-    // Clean up data - build proper ExactDate objects
-    const dataToSave = {
-      name: eraData.value.name,
-      startDate: {
-        year: eraData.value.startDate.year,
-      },
-      endDate: {
-        year: eraData.value.endDate.year,
-      },
-    }
-
-    // Add optional date fields
-    if (eraData.value.startDate.month) {
-      dataToSave.startDate.month = eraData.value.startDate.month
-    }
-    if (eraData.value.startDate.day) {
-      dataToSave.startDate.day = eraData.value.startDate.day
-    }
-    if (eraData.value.endDate.month) {
-      dataToSave.endDate.month = eraData.value.endDate.month
-    }
-    if (eraData.value.endDate.day) {
-      dataToSave.endDate.day = eraData.value.endDate.day
-    }
-
-    // Add description if provided
-    if (eraData.value.description) {
-      dataToSave.description = eraData.value.description
-    }
+    const payload = buildEraPayload()
 
     if (isNewEra.value) {
-      await erasStore.create(dataToSave)
+      await erasStore.create(payload)
     } else {
-      await erasStore.update(eraId.value, dataToSave)
+      await erasStore.update(eraId.value, payload)
     }
 
     router.push('/eras')
   } catch (error) {
     console.error('Failed to save era:', error)
-    alert('Failed to save era')
+    alert(error.message || 'Failed to save era')
+  }
+}
+
+// Load existing era data
+function loadEraData(era) {
+  eraData.value.name = era.name || ''
+  eraData.value.description = era.description || ''
+  eraData.value.startDateType = era.startDateType || 'Exact'
+  eraData.value.endDateType = era.endDateType || 'Exact'
+
+  // Load start date
+  if (era.startDateType === 'Exact' && era.startDate) {
+    startExactYear.value = era.startDate.year
+    startExactMonth.value = era.startDate.month || null
+    startExactDay.value = era.startDate.day || null
+  } else if (era.startDateType === 'Relative') {
+    if (era.startRelativeEraId) {
+      startRelativeType.value = 'era'
+      const refEra = erasStore.eras.find(e => e._id === era.startRelativeEraId)
+      if (refEra) {
+        selectedStartRelativeEra.value = refEra
+      }
+    } else if (era.startRelativeEventId) {
+      startRelativeType.value = 'event'
+      const refEvent = eventsStore.events.find(e => e._id === era.startRelativeEventId)
+      if (refEvent) {
+        selectedStartRelativeEvent.value = refEvent
+      }
+    }
+
+    if (era.startRelativeOffset !== null && era.startRelativeOffset !== undefined) {
+      startIsVagueRelative.value = false
+      startOffsetAmount.value = Math.abs(era.startRelativeOffset)
+      startDirection.value = era.startRelativeOffset < 0 ? 'Before' : 'After'
+    } else {
+      startIsVagueRelative.value = true
+      startDirection.value = era.startRelativeDirection || 'After'
+    }
+    startTimeUnit.value = era.startRelativeTimeUnit || 'Days'
+  } else if (era.startDateType === 'Approximation') {
+    startApproximateDescription.value = era.startApproximateDescription || ''
+  }
+
+  // Load end date
+  if (era.endDateType === 'Exact' && era.endDate) {
+    endExactYear.value = era.endDate.year
+    endExactMonth.value = era.endDate.month || null
+    endExactDay.value = era.endDate.day || null
+  } else if (era.endDateType === 'Relative') {
+    if (era.endRelativeEraId) {
+      endRelativeType.value = 'era'
+      const refEra = erasStore.eras.find(e => e._id === era.endRelativeEraId)
+      if (refEra) {
+        selectedEndRelativeEra.value = refEra
+      }
+    } else if (era.endRelativeEventId) {
+      endRelativeType.value = 'event'
+      const refEvent = eventsStore.events.find(e => e._id === era.endRelativeEventId)
+      if (refEvent) {
+        selectedEndRelativeEvent.value = refEvent
+      }
+    }
+
+    if (era.endRelativeOffset !== null && era.endRelativeOffset !== undefined) {
+      endIsVagueRelative.value = false
+      endOffsetAmount.value = Math.abs(era.endRelativeOffset)
+      endDirection.value = era.endRelativeOffset < 0 ? 'Before' : 'After'
+    } else {
+      endIsVagueRelative.value = true
+      endDirection.value = era.endRelativeDirection || 'After'
+    }
+    endTimeUnit.value = era.endRelativeTimeUnit || 'Days'
+  } else if (era.endDateType === 'Approximation') {
+    endApproximateDescription.value = era.endApproximateDescription || ''
   }
 }
 
 onMounted(async () => {
+  // Load eras and events for autocomplete
+  await Promise.all([
+    erasStore.fetchAll(),
+    eventsStore.fetchAll()
+  ])
+
   if (!isNewEra.value) {
     await erasStore.fetchById(eraId.value)
     if (erasStore.currentEra) {
-      eraData.value = {
-        name: erasStore.currentEra.name || '',
-        description: erasStore.currentEra.description || '',
-        startDate: {
-          year: erasStore.currentEra.startDate?.year || null,
-          month: erasStore.currentEra.startDate?.month || null,
-          day: erasStore.currentEra.startDate?.day || null,
-        },
-        endDate: {
-          year: erasStore.currentEra.endDate?.year || null,
-          month: erasStore.currentEra.endDate?.month || null,
-          day: erasStore.currentEra.endDate?.day || null,
-        },
-      }
+      loadEraData(erasStore.currentEra)
     }
   }
 })
