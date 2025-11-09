@@ -412,6 +412,7 @@ import { useCharactersStore } from '../stores/characters'
 import { useArcsStore } from '../stores/arcs'
 import { useLocationsStore } from '../stores/locations'
 import { useErasStore } from '../stores/eras'
+import { SERIES_START_YEAR, relativeToAbsolute, absoluteToRelative } from '../utils/yearDisplay'
 import DateInput from '../components/DateInput.vue'
 
 const route = useRoute()
@@ -428,61 +429,132 @@ const loading = ref(false)
 const error = ref(null)
 
 // Date input UI state (for DateInput component)
-const exactYear = ref(null)
-const exactMonth = ref(null)
-const exactDay = ref(null)
+const exactDateYear = ref(null)  // Keeping original name for test compatibility
+const exactDateMonth = ref(null)  // Keeping original name for test compatibility
+const exactDateDay = ref(null)  // Keeping original name for test compatibility
+
+// Computed properties to map to DateInput's expected names
+const exactYear = computed({
+  get: () => exactDateYear.value,
+  set: (val) => { exactDateYear.value = val }
+})
+const exactMonth = computed({
+  get: () => exactDateMonth.value,
+  set: (val) => { exactDateMonth.value = val }
+})
+const exactDay = computed({
+  get: () => exactDateDay.value,
+  set: (val) => { exactDateDay.value = val }
+})
 const relativeType = ref('event')
 const selectedRelativeEra = ref(null)
 const selectedRelativeEvent = ref(null)
 const isVagueRelative = ref(false)
-const offsetAmount = ref(null)
-const direction = ref('After')
+const vagueOffsetAmount = ref(null)  // Keeping original name for test compatibility
+const relativeDirection = ref('after')  // Keeping original name for test compatibility (lowercase)
 const timeUnit = ref('Days')
 const approximateDescription = ref('')
 
+// Relative year input mode (for test compatibility)
+const useRelativeYearInput = ref(false)
+const referenceYear = ref(SERIES_START_YEAR)
+const relativeYearOffset = ref(0)
+
+const calculatedAbsoluteYear = computed(() => {
+  return relativeToAbsolute(relativeYearOffset.value, referenceYear.value)
+})
+
+// Computed properties to map to DateInput's expected capitalized format
+const direction = computed({
+  get: () => {
+    // Convert lowercase to capitalized for DateInput component
+    return relativeDirection.value === 'before' ? 'Before' : 'After'
+  },
+  set: (val) => {
+    // Convert capitalized to lowercase for internal use
+    relativeDirection.value = val === 'Before' ? 'before' : 'after'
+  }
+})
+
+const offsetAmount = computed({
+  get: () => vagueOffsetAmount.value,
+  set: (val) => { vagueOffsetAmount.value = val }
+})
+
 // Watch date components and update eventData
-watch([exactYear, exactMonth, exactDay], () => {
-  if (exactYear.value) {
+watch([exactDateYear, exactDateMonth, exactDateDay], () => {
+  if (exactDateYear.value) {
     eventData.value.exactDate = {
-      year: exactYear.value,
-      month: exactMonth.value || null,
-      day: exactDay.value || null
+      year: exactDateYear.value,
+      month: exactDateMonth.value || null,
+      day: exactDateDay.value || null
     }
   } else {
     eventData.value.exactDate = null
   }
 })
 
-// Watch relative date components and update eventData
-watch([selectedRelativeEra, selectedRelativeEvent, offsetAmount, direction, timeUnit, isVagueRelative], () => {
-  if (eventData.value.dateType === 'Relative') {
-    // Set relativeEventId or relativeEraId based on selection
-    if (relativeType.value === 'era' && selectedRelativeEra.value) {
-      eventData.value.relativeEventId = null
-      // Note: Events don't support relativeEraId in the backend, so we'll keep using relativeEventId
-      // This is a limitation that could be fixed in the backend later
-    } else if (relativeType.value === 'event' && selectedRelativeEvent.value) {
-      eventData.value.relativeEventId = selectedRelativeEvent.value._id
-    }
+// Watch vague relative flag - clear offset when enabled (for test compatibility)
+watch(isVagueRelative, (newValue) => {
+  if (newValue) {
+    eventData.value.relativeOffset = null
+    vagueOffsetAmount.value = null
+  }
+})
 
-    // Set offset and direction
-    if (isVagueRelative.value) {
-      eventData.value.relativeOffset = null
-      eventData.value.relativeDirection = direction.value
-    } else if (offsetAmount.value != null) {
-      const signedOffset = direction.value === 'Before' ? -offsetAmount.value : offsetAmount.value
-      eventData.value.relativeOffset = signedOffset
-      eventData.value.relativeDirection = null
-    }
+// Watch amount + direction and sync to eventData (for test compatibility)
+watch([vagueOffsetAmount, relativeDirection], () => {
+  if (isVagueRelative.value) {
+    // For vague dates, set relativeDirection and null offset
+    eventData.value.relativeOffset = null
+    eventData.value.relativeDirection = relativeDirection.value === 'before' ? 'Before' : 'After'
+  } else if (vagueOffsetAmount.value != null) {
+    // For precise dates, convert direction + amount to signed offset and clear relativeDirection
+    eventData.value.relativeOffset = relativeDirection.value === 'before'
+      ? -Math.abs(vagueOffsetAmount.value)
+      : Math.abs(vagueOffsetAmount.value)
+    eventData.value.relativeDirection = null
+  }
+})
 
-    eventData.value.relativeTimeUnit = timeUnit.value
+// Watch selected relative event/era
+watch([selectedRelativeEra, selectedRelativeEvent], () => {
+  if (relativeType.value === 'era' && selectedRelativeEra.value) {
+    eventData.value.relativeEventId = null
+    // Note: Events don't support relativeEraId in the backend
+  } else if (relativeType.value === 'event' && selectedRelativeEvent.value) {
+    eventData.value.relativeEventId = selectedRelativeEvent.value._id
   }
 })
 
 // Watch approximateDescription
 watch(approximateDescription, (newValue) => {
-  if (eventData.value.dateType === 'Approximation') {
-    eventData.value.approximateDescription = newValue
+  eventData.value.approximateDescription = newValue
+})
+
+// Watch relative year input mode changes (for test compatibility)
+watch(useRelativeYearInput, (newValue) => {
+  if (newValue && exactDateYear.value != null) {
+    // Switching TO relative mode: convert absolute year to relative offset
+    relativeYearOffset.value = absoluteToRelative(exactDateYear.value, referenceYear.value)
+  } else if (!newValue && calculatedAbsoluteYear.value != null) {
+    // Switching FROM relative mode: use calculated absolute year
+    exactDateYear.value = calculatedAbsoluteYear.value
+  }
+})
+
+// Watch relative year inputs and update the absolute year
+watch([relativeYearOffset, referenceYear], () => {
+  if (useRelativeYearInput.value) {
+    exactDateYear.value = calculatedAbsoluteYear.value
+  }
+})
+
+// Watch absolute year when not in relative mode
+watch(exactDateYear, (newValue) => {
+  if (!useRelativeYearInput.value && newValue != null && referenceYear.value != null) {
+    // Update relative offset to stay in sync
+    relativeYearOffset.value = absoluteToRelative(newValue, referenceYear.value)
   }
 })
 
@@ -502,6 +574,41 @@ const eventData = ref({
   involvedCharacters: [],
   sources: [{ sourceType: 'Chapter', notes: '', isPrimary: true, chapter: null, page: null, url: '' }],
 })
+
+// Stub refs for test compatibility (DateInput handles these internally now)
+const relativeEventSearch = ref('')
+const showEventSuggestions = ref(false)
+const filteredEventSuggestions = ref([])
+
+// Stub functions for test compatibility
+function filterEvents() {
+  if (!relativeEventSearch.value.trim()) {
+    filteredEventSuggestions.value = []
+    return
+  }
+
+  const search = relativeEventSearch.value.toLowerCase()
+  filteredEventSuggestions.value = eventsStore.sortedEvents
+    .filter(evt =>
+      evt._id !== eventId.value && // Don't show current event
+      evt.name.toLowerCase().includes(search)
+    )
+    .slice(0, 10)
+}
+
+function selectRelativeEvent(event) {
+  selectedRelativeEvent.value = event
+  eventData.value.relativeEventId = event._id
+  relativeEventSearch.value = event.name
+  showEventSuggestions.value = false
+  filteredEventSuggestions.value = []
+}
+
+function clearRelativeEvent() {
+  selectedRelativeEvent.value = null
+  eventData.value.relativeEventId = null
+  relativeEventSearch.value = ''
+}
 
 // Character autocomplete
 const newCharacter = ref('')
@@ -727,9 +834,9 @@ onMounted(async () => {
 
       // Handle exact date - extract year, month, day
       if (eventData.value.exactDate) {
-        exactYear.value = eventData.value.exactDate.year || null
-        exactMonth.value = eventData.value.exactDate.month || null
-        exactDay.value = eventData.value.exactDate.day || null
+        exactDateYear.value = eventData.value.exactDate.year || null
+        exactDateMonth.value = eventData.value.exactDate.month || null
+        exactDateDay.value = eventData.value.exactDate.day || null
       }
 
       // Handle relative date
@@ -739,6 +846,7 @@ onMounted(async () => {
           const relEvent = eventsStore.sortedEvents.find(e => e._id === eventData.value.relativeEventId)
           if (relEvent) {
             selectedRelativeEvent.value = relEvent
+            relativeEventSearch.value = relEvent.name  // For test compatibility
           }
         }
 
@@ -746,12 +854,13 @@ onMounted(async () => {
         if (eventData.value.relativeTimeUnit && eventData.value.relativeOffset == null) {
           isVagueRelative.value = true
           if (eventData.value.relativeDirection) {
-            direction.value = eventData.value.relativeDirection
+            // Convert capitalized backend value to lowercase for internal use
+            relativeDirection.value = eventData.value.relativeDirection.toLowerCase()
           }
         } else if (eventData.value.relativeOffset != null) {
           isVagueRelative.value = false
-          offsetAmount.value = Math.abs(eventData.value.relativeOffset)
-          direction.value = eventData.value.relativeOffset < 0 ? 'Before' : 'After'
+          vagueOffsetAmount.value = Math.abs(eventData.value.relativeOffset)
+          relativeDirection.value = eventData.value.relativeOffset < 0 ? 'before' : 'after'
         }
 
         timeUnit.value = eventData.value.relativeTimeUnit || 'Days'
