@@ -3,6 +3,7 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-one-piece-dark">Story Arcs</h1>
       <router-link
+        v-if="authStore.isEditor"
         to="/arcs/new"
         class="px-4 py-2 bg-one-piece-primary text-white rounded hover:bg-one-piece-dark"
       >
@@ -56,12 +57,14 @@
               {{ showingTimeline[arc._id] ? 'Hide' : 'View' }} Timeline
             </button>
             <router-link
+              v-if="authStore.isEditor"
               :to="`/arcs/${arc._id}`"
               class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
             >
               Edit
             </router-link>
             <button
+              v-if="authStore.isAdmin"
               @click="confirmDelete(arc)"
               class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
             >
@@ -103,6 +106,7 @@
     <div v-else class="text-center py-12 bg-gray-50 rounded-lg">
       <p class="text-gray-600 mb-4">No arcs found</p>
       <router-link
+        v-if="authStore.isEditor"
         to="/arcs/new"
         class="px-4 py-2 bg-one-piece-primary text-white rounded hover:bg-one-piece-dark inline-block"
       >
@@ -116,10 +120,12 @@
 import { onMounted, ref, reactive } from 'vue'
 import { useArcsStore } from '../stores/arcs'
 import { useSagasStore } from '../stores/sagas'
+import { useAuthStore } from '../stores/auth'
 import { arcsAPI } from '../services/api'
 
 const arcsStore = useArcsStore()
 const sagasStore = useSagasStore()
+const authStore = useAuthStore()
 
 const showingTimeline = reactive({})
 const loadingTimelines = reactive({})

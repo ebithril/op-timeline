@@ -3,6 +3,7 @@
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-3xl font-bold text-one-piece-dark">Sagas</h1>
       <router-link
+        v-if="authStore.isEditor"
         to="/sagas/new"
         class="px-4 py-2 bg-one-piece-primary text-white rounded hover:bg-one-piece-dark"
       >
@@ -51,12 +52,14 @@
               {{ showingTimeline[saga._id] ? 'Hide' : 'View' }} Timeline
             </button>
             <router-link
+              v-if="authStore.isEditor"
               :to="`/sagas/${saga._id}`"
               class="px-3 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
             >
               Edit
             </router-link>
             <button
+              v-if="authStore.isAdmin"
               @click="confirmDelete(saga)"
               class="px-3 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
             >
@@ -98,6 +101,7 @@
     <div v-else class="text-center py-12 bg-gray-50 rounded-lg">
       <p class="text-gray-600 mb-4">No sagas found</p>
       <router-link
+        v-if="authStore.isEditor"
         to="/sagas/new"
         class="px-4 py-2 bg-one-piece-primary text-white rounded hover:bg-one-piece-dark inline-block"
       >
@@ -110,9 +114,11 @@
 <script setup>
 import { onMounted, reactive } from 'vue'
 import { useSagasStore } from '../stores/sagas'
+import { useAuthStore } from '../stores/auth'
 import { sagasAPI } from '../services/api'
 
 const sagasStore = useSagasStore()
+const authStore = useAuthStore()
 
 const showingTimeline = reactive({})
 const loadingTimelines = reactive({})
