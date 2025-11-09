@@ -155,7 +155,7 @@ describe('TimelineView', () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      wrapper.vm.toggleCharacterFilter('Luffy')
+      wrapper.vm.addCharacterFilter('Luffy')
       await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.filteredEvents).toHaveLength(2)
@@ -163,41 +163,92 @@ describe('TimelineView', () => {
       expect(wrapper.vm.filteredEvents[1].involvedCharacters).toContain('Luffy')
     })
 
-    it('filters events by multiple characters (OR logic)', async () => {
+    it('filters events by multiple characters with OR logic (any)', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      wrapper.vm.toggleCharacterFilter('Zoro')
-      wrapper.vm.toggleCharacterFilter('Nami')
+      wrapper.vm.addCharacterFilter('Zoro')
+      wrapper.vm.addCharacterFilter('Nami')
+      wrapper.vm.characterFilterMode = 'any'
       await wrapper.vm.$nextTick()
 
       expect(wrapper.vm.filteredEvents).toHaveLength(3)
     })
 
-    it('toggles character filter on and off', async () => {
+    it('filters events by multiple characters with AND logic (all)', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      wrapper.vm.toggleCharacterFilter('Luffy')
+      wrapper.vm.addCharacterFilter('Luffy')
+      wrapper.vm.addCharacterFilter('Zoro')
+      wrapper.vm.characterFilterMode = 'all'
+      await wrapper.vm.$nextTick()
+
+      // Only Event 1 has both Luffy and Zoro
+      expect(wrapper.vm.filteredEvents).toHaveLength(1)
+      expect(wrapper.vm.filteredEvents[0]._id).toBe('e1')
+      expect(wrapper.vm.filteredEvents[0].involvedCharacters).toContain('Luffy')
+      expect(wrapper.vm.filteredEvents[0].involvedCharacters).toContain('Zoro')
+    })
+
+    it('adds and removes character filter', async () => {
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.addCharacterFilter('Luffy')
       expect(wrapper.vm.selectedCharacters).toContain('Luffy')
 
-      wrapper.vm.toggleCharacterFilter('Luffy')
+      wrapper.vm.removeCharacterFilter('Luffy')
       expect(wrapper.vm.selectedCharacters).not.toContain('Luffy')
     })
 
-    it('highlights selected character buttons', async () => {
+    it('shows character suggestions when searching', async () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      const buttons = wrapper.findAll('button').filter(b => b.text() === 'Luffy')
-      const luffyButton = buttons[0]
-
-      // Click to select
-      await luffyButton.trigger('click')
+      wrapper.vm.characterSearchQuery = 'Lu'
       await wrapper.vm.$nextTick()
 
-      expect(luffyButton.classes()).toContain('bg-one-piece-primary')
-      expect(luffyButton.classes()).toContain('text-white')
+      expect(wrapper.vm.filteredCharacterSuggestions).toHaveLength(1)
+      expect(wrapper.vm.filteredCharacterSuggestions[0].name).toBe('Luffy')
+    })
+
+    it('filters out already selected characters from suggestions', async () => {
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.addCharacterFilter('Luffy')
+      wrapper.vm.characterSearchQuery = 'Lu'
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.filteredCharacterSuggestions).toHaveLength(0)
+    })
+
+    it('clears search query after adding character', async () => {
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.characterSearchQuery = 'Luffy'
+      wrapper.vm.addCharacterFilter('Luffy')
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.characterSearchQuery).toBe('')
+    })
+
+    it('limits character suggestions to 10 items', async () => {
+      // Add more characters to test limit
+      charactersStore.characters = Array.from({ length: 20 }, (_, i) => ({
+        _id: `${i}`,
+        name: `Character ${i}`,
+      }))
+
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      wrapper.vm.characterSearchQuery = 'Character'
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.filteredCharacterSuggestions.length).toBeLessThanOrEqual(10)
     })
   })
 
@@ -438,7 +489,7 @@ describe('TimelineView', () => {
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
-      wrapper.vm.toggleCharacterFilter('Zoro')
+      wrapper.vm.addCharacterFilter('Zoro')
       await wrapper.vm.$nextTick()
 
       expect(wrapper.text()).toContain('No events found')

@@ -24,21 +24,85 @@
 
       <!-- Character Filter -->
       <div>
-        <h2 class="text-xl font-semibold mb-3">Filter by Characters</h2>
-        <div class="flex flex-wrap gap-2">
-          <button
-            v-for="character in charactersStore.sortedCharacters"
-            :key="character._id"
-            @click="toggleCharacterFilter(character.name)"
-            :class="[
-              'px-3 py-1 rounded',
-              selectedCharacters.includes(character.name)
-                ? 'bg-one-piece-primary text-white'
-                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-            ]"
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xl font-semibold">Filter by Characters</h2>
+
+          <!-- AND/OR Toggle -->
+          <div v-if="selectedCharacters.length > 1" class="flex items-center gap-2">
+            <span class="text-sm text-gray-600">Match:</span>
+            <div class="flex bg-gray-200 rounded">
+              <button
+                @click="characterFilterMode = 'any'"
+                :class="[
+                  'px-3 py-1 text-sm rounded transition-colors',
+                  characterFilterMode === 'any'
+                    ? 'bg-one-piece-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-300'
+                ]"
+              >
+                Any
+              </button>
+              <button
+                @click="characterFilterMode = 'all'"
+                :class="[
+                  'px-3 py-1 text-sm rounded transition-colors',
+                  characterFilterMode === 'all'
+                    ? 'bg-one-piece-primary text-white'
+                    : 'text-gray-700 hover:bg-gray-300'
+                ]"
+              >
+                All
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Character Search Input -->
+        <div class="relative mb-3">
+          <input
+            v-model="characterSearchQuery"
+            @input="showCharacterDropdown = true"
+            @focus="showCharacterDropdown = true"
+            @blur="hideDropdownDelayed"
+            type="text"
+            placeholder="Search characters to filter..."
+            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+          />
+
+          <!-- Character Suggestions Dropdown -->
+          <div
+            v-if="showCharacterDropdown && filteredCharacterSuggestions.length > 0"
+            class="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto"
           >
-            {{ character.name }}
-          </button>
+            <button
+              v-for="character in filteredCharacterSuggestions"
+              :key="character._id"
+              @mousedown.prevent="addCharacterFilter(character.name)"
+              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
+            >
+              {{ character.name }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Selected Characters -->
+        <div v-if="selectedCharacters.length > 0" class="flex flex-wrap gap-2">
+          <div
+            v-for="characterName in selectedCharacters"
+            :key="characterName"
+            class="flex items-center gap-2 px-3 py-1 bg-one-piece-primary text-white rounded"
+          >
+            <span>{{ characterName }}</span>
+            <button
+              @click="removeCharacterFilter(characterName)"
+              class="text-white hover:text-gray-200 font-bold"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+        <div v-else class="text-sm text-gray-500 italic">
+          No character filters selected (showing all events)
         </div>
       </div>
     </div>
@@ -186,6 +250,9 @@ const authStore = useAuthStore()
 
 const selectedCharacters = ref([])
 const yearDisplayMode = ref(getDisplayModePreference())
+const characterSearchQuery = ref('')
+const showCharacterDropdown = ref(false)
+const characterFilterMode = ref('any') // 'any' for OR, 'all' for AND
 
 // Constants
 const MONTH_NAMES = [
@@ -215,16 +282,39 @@ function saveDisplayModePreference() {
   savePreference(yearDisplayMode.value)
 }
 
+// Filter character suggestions based on search query
+const filteredCharacterSuggestions = computed(() => {
+  if (!characterSearchQuery.value.trim()) {
+    return []
+  }
+
+  const query = characterSearchQuery.value.toLowerCase()
+  return charactersStore.sortedCharacters
+    .filter(char =>
+      !selectedCharacters.value.includes(char.name) &&
+      char.name.toLowerCase().includes(query)
+    )
+    .slice(0, 10) // Limit to 10 suggestions
+})
+
 const filteredEvents = computed(() => {
   if (selectedCharacters.value.length === 0) {
     return eventsStore.sortedEvents
   }
 
-  return eventsStore.sortedEvents.filter(event =>
-    event.involvedCharacters.some(char =>
-      selectedCharacters.value.includes(char)
-    )
-  )
+  return eventsStore.sortedEvents.filter(event => {
+    if (characterFilterMode.value === 'all') {
+      // AND logic: event must contain ALL selected characters
+      return selectedCharacters.value.every(char =>
+        event.involvedCharacters.includes(char)
+      )
+    } else {
+      // OR logic: event must contain ANY selected character
+      return event.involvedCharacters.some(char =>
+        selectedCharacters.value.includes(char)
+      )
+    }
+  })
 })
 
 // Group events by era
@@ -278,13 +368,27 @@ const groupedByEra = computed(() => {
   return result
 })
 
-function toggleCharacterFilter(characterName) {
-  const index = selectedCharacters.value.indexOf(characterName)
-  if (index === -1) {
+// Character filter functions
+function addCharacterFilter(characterName) {
+  if (!selectedCharacters.value.includes(characterName)) {
     selectedCharacters.value.push(characterName)
-  } else {
+    characterSearchQuery.value = ''
+    showCharacterDropdown.value = false
+  }
+}
+
+function removeCharacterFilter(characterName) {
+  const index = selectedCharacters.value.indexOf(characterName)
+  if (index !== -1) {
     selectedCharacters.value.splice(index, 1)
   }
+}
+
+function hideDropdownDelayed() {
+  // Delay hiding to allow click events to fire first
+  setTimeout(() => {
+    showCharacterDropdown.value = false
+  }, 200)
 }
 
 function getEventTypeColor(type) {
