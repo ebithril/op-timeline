@@ -65,7 +65,7 @@
         <div class="mb-3">
           <label class="flex items-center gap-2">
             <input
-              v-model="useBirthKaienrekiInput"
+              v-model="birthDate.useKaienrekiInput.value"
               type="checkbox"
               class="rounded"
             />
@@ -78,7 +78,7 @@
         <div class="mb-3">
           <label class="flex items-center gap-2">
             <input
-              v-model="useBirthRelativeYearInput"
+              v-model="birthDate.useRelativeYearInput.value"
               type="checkbox"
               class="rounded"
             />
@@ -90,10 +90,10 @@
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Year</label>
-            <div v-if="useBirthRelativeYearInput" class="space-y-2">
+            <div v-if="birthDate.useRelativeYearInput.value" class="space-y-2">
               <!-- Reference year selector -->
               <select
-                v-model="birthReferenceYear"
+                v-model="birthDate.referenceYear.value"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
               >
                 <option :value="1539">Series Start (1539)</option>
@@ -102,7 +102,7 @@
 
               <!-- Relative offset input -->
               <input
-                v-model.number="birthRelativeYearOffset"
+                v-model.number="birthDate.relativeYearOffset.value"
                 type="number"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
                 placeholder="e.g., -22 (22 years before)"
@@ -110,25 +110,25 @@
 
               <!-- Show calculated absolute year -->
               <p class="text-xs text-gray-600">
-                = Year {{ calculatedBirthAbsoluteYear }}
+                = Year {{ birthDate.calculatedAbsoluteYear.value }}
               </p>
             </div>
             <div v-else>
               <input
-                v-model.number="displayedBirthYear"
+                v-model.number="birthDate.displayedYear.value"
                 type="number"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                :placeholder="useBirthKaienrekiInput ? 'e.g., 1500' : 'e.g., 4100'"
+                :placeholder="birthDate.useKaienrekiInput.value ? 'e.g., 1500' : 'e.g., 4100'"
               />
-              <p v-if="!useBirthKaienrekiInput && birthDateYear != null" class="text-xs text-gray-500 mt-1">
-                Kaienreki: {{ birthDateYear }}
+              <p v-if="!birthDate.useKaienrekiInput.value && birthDate.dateYear.value != null" class="text-xs text-gray-500 mt-1">
+                Kaienreki: {{ birthDate.dateYear.value }}
               </p>
             </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Month</label>
             <input
-              v-model.number="birthDateMonth"
+              v-model.number="birthDate.dateMonth.value"
               type="number"
               min="1"
               max="12"
@@ -139,7 +139,7 @@
           <div>
             <label class="block text-xs text-gray-600 mb-1">Day</label>
             <input
-              v-model.number="birthDateDay"
+              v-model.number="birthDate.dateDay.value"
               type="number"
               min="1"
               max="31"
@@ -158,7 +158,7 @@
         <div class="mb-3">
           <label class="flex items-center gap-2">
             <input
-              v-model="useDeathKaienrekiInput"
+              v-model="deathDate.useKaienrekiInput.value"
               type="checkbox"
               class="rounded"
             />
@@ -171,7 +171,7 @@
         <div class="mb-3">
           <label class="flex items-center gap-2">
             <input
-              v-model="useDeathRelativeYearInput"
+              v-model="deathDate.useRelativeYearInput.value"
               type="checkbox"
               class="rounded"
             />
@@ -183,10 +183,10 @@
         <div class="grid grid-cols-3 gap-4">
           <div>
             <label class="block text-xs text-gray-600 mb-1">Year</label>
-            <div v-if="useDeathRelativeYearInput" class="space-y-2">
+            <div v-if="deathDate.useRelativeYearInput.value" class="space-y-2">
               <!-- Reference year selector -->
               <select
-                v-model="deathReferenceYear"
+                v-model="deathDate.referenceYear.value"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
               >
                 <option :value="1539">Series Start (1539)</option>
@@ -195,7 +195,7 @@
 
               <!-- Relative offset input -->
               <input
-                v-model.number="deathRelativeYearOffset"
+                v-model.number="deathDate.relativeYearOffset.value"
                 type="number"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
                 placeholder="e.g., -2 (2 years before)"
@@ -203,25 +203,25 @@
 
               <!-- Show calculated absolute year -->
               <p class="text-xs text-gray-600">
-                = Year {{ calculatedDeathAbsoluteYear }}
+                = Year {{ deathDate.calculatedAbsoluteYear.value }}
               </p>
             </div>
             <div v-else>
               <input
-                v-model.number="displayedDeathYear"
+                v-model.number="deathDate.displayedYear.value"
                 type="number"
                 class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                :placeholder="useDeathKaienrekiInput ? 'e.g., 1520' : 'e.g., 4120'"
+                :placeholder="deathDate.useKaienrekiInput.value ? 'e.g., 1520' : 'e.g., 4120'"
               />
-              <p v-if="!useDeathKaienrekiInput && deathDateYear != null" class="text-xs text-gray-500 mt-1">
-                Kaienreki: {{ deathDateYear }}
+              <p v-if="!deathDate.useKaienrekiInput.value && deathDate.dateYear.value != null" class="text-xs text-gray-500 mt-1">
+                Kaienreki: {{ deathDate.dateYear.value }}
               </p>
             </div>
           </div>
           <div>
             <label class="block text-xs text-gray-600 mb-1">Month</label>
             <input
-              v-model.number="deathDateMonth"
+              v-model.number="deathDate.dateMonth.value"
               type="number"
               min="1"
               max="12"
@@ -232,7 +232,7 @@
           <div>
             <label class="block text-xs text-gray-600 mb-1">Day</label>
             <input
-              v-model.number="deathDateDay"
+              v-model.number="deathDate.dateDay.value"
               type="number"
               min="1"
               max="31"
@@ -288,7 +288,7 @@
 import { ref, onMounted, computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useCharactersStore } from '../stores/characters'
-import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute, absoluteToRelative, kaienrekiToTenreki, tenrekiToKaienreki } from '../utils/yearDisplay'
+import { useDateInput } from '../composables/useDateInput'
 
 const route = useRoute()
 const router = useRouter()
@@ -297,65 +297,9 @@ const charactersStore = useCharactersStore()
 const characterId = computed(() => route.params.id)
 const isNewCharacter = computed(() => !characterId.value || characterId.value === 'new')
 
-// Date component refs
-const birthDateYear = ref(null)
-const birthDateMonth = ref(null)
-const birthDateDay = ref(null)
-
-const deathDateYear = ref(null)
-const deathDateMonth = ref(null)
-const deathDateDay = ref(null)
-
-// Calendar input modes (Kaienreki vs Tenreki)
-const useBirthKaienrekiInput = ref(true)
-const useDeathKaienrekiInput = ref(true)
-
-// Computed properties for displayed years (converts between calendars)
-const displayedBirthYear = computed({
-  get: () => {
-    if (birthDateYear.value == null) return null
-    return useBirthKaienrekiInput.value ? birthDateYear.value : kaienrekiToTenreki(birthDateYear.value)
-  },
-  set: (val) => {
-    if (val == null) {
-      birthDateYear.value = null
-    } else {
-      birthDateYear.value = useBirthKaienrekiInput.value ? val : tenrekiToKaienreki(val)
-    }
-  }
-})
-
-const displayedDeathYear = computed({
-  get: () => {
-    if (deathDateYear.value == null) return null
-    return useDeathKaienrekiInput.value ? deathDateYear.value : kaienrekiToTenreki(deathDateYear.value)
-  },
-  set: (val) => {
-    if (val == null) {
-      deathDateYear.value = null
-    } else {
-      deathDateYear.value = useDeathKaienrekiInput.value ? val : tenrekiToKaienreki(val)
-    }
-  }
-})
-
-// Birth date relative year input mode
-const useBirthRelativeYearInput = ref(false)
-const birthReferenceYear = ref(SERIES_START_YEAR)
-const birthRelativeYearOffset = ref(0)
-
-const calculatedBirthAbsoluteYear = computed(() => {
-  return relativeToAbsolute(birthRelativeYearOffset.value, birthReferenceYear.value)
-})
-
-// Death date relative year input mode
-const useDeathRelativeYearInput = ref(false)
-const deathReferenceYear = ref(SERIES_START_YEAR)
-const deathRelativeYearOffset = ref(0)
-
-const calculatedDeathAbsoluteYear = computed(() => {
-  return relativeToAbsolute(deathRelativeYearOffset.value, deathReferenceYear.value)
-})
+// Use the composable for birth and death dates
+const birthDate = useDateInput()
+const deathDate = useDateInput()
 
 const characterData = ref({
   name: '',
@@ -366,82 +310,14 @@ const characterData = ref({
   description: '',
 })
 
-// Watch birth relative year input mode changes
-watch(useBirthRelativeYearInput, (newValue) => {
-  if (newValue && birthDateYear.value != null) {
-    // Switching TO relative mode: convert absolute year to relative offset
-    birthRelativeYearOffset.value = absoluteToRelative(birthDateYear.value, birthReferenceYear.value)
-  } else if (!newValue && calculatedBirthAbsoluteYear.value != null) {
-    // Switching FROM relative mode: use calculated absolute year
-    birthDateYear.value = calculatedBirthAbsoluteYear.value
-  }
+// Watch birth date and update characterData
+watch(birthDate.dateObject, (newValue) => {
+  characterData.value.birthDate = newValue
 })
 
-// Watch birth relative year inputs and update the absolute year
-watch([birthRelativeYearOffset, birthReferenceYear], () => {
-  if (useBirthRelativeYearInput.value) {
-    birthDateYear.value = calculatedBirthAbsoluteYear.value
-  }
-})
-
-// Watch absolute birth year when not in relative mode
-watch(birthDateYear, (newValue) => {
-  if (!useBirthRelativeYearInput.value && newValue != null && birthReferenceYear.value != null) {
-    // Update relative offset to stay in sync
-    birthRelativeYearOffset.value = absoluteToRelative(newValue, birthReferenceYear.value)
-  }
-})
-
-// Watch death relative year input mode changes
-watch(useDeathRelativeYearInput, (newValue) => {
-  if (newValue && deathDateYear.value != null) {
-    // Switching TO relative mode: convert absolute year to relative offset
-    deathRelativeYearOffset.value = absoluteToRelative(deathDateYear.value, deathReferenceYear.value)
-  } else if (!newValue && calculatedDeathAbsoluteYear.value != null) {
-    // Switching FROM relative mode: use calculated absolute year
-    deathDateYear.value = calculatedDeathAbsoluteYear.value
-  }
-})
-
-// Watch death relative year inputs and update the absolute year
-watch([deathRelativeYearOffset, deathReferenceYear], () => {
-  if (useDeathRelativeYearInput.value) {
-    deathDateYear.value = calculatedDeathAbsoluteYear.value
-  }
-})
-
-// Watch absolute death year when not in relative mode
-watch(deathDateYear, (newValue) => {
-  if (!useDeathRelativeYearInput.value && newValue != null && deathReferenceYear.value != null) {
-    // Update relative offset to stay in sync
-    deathRelativeYearOffset.value = absoluteToRelative(newValue, deathReferenceYear.value)
-  }
-})
-
-// Watch birth date components and update characterData.birthDate
-watch([birthDateYear, birthDateMonth, birthDateDay], () => {
-  if (birthDateYear.value) {
-    characterData.value.birthDate = {
-      year: birthDateYear.value,
-      month: birthDateMonth.value || null,
-      day: birthDateDay.value || null
-    }
-  } else {
-    characterData.value.birthDate = null
-  }
-})
-
-// Watch death date components and update characterData.deathDate
-watch([deathDateYear, deathDateMonth, deathDateDay], () => {
-  if (deathDateYear.value) {
-    characterData.value.deathDate = {
-      year: deathDateYear.value,
-      month: deathDateMonth.value || null,
-      day: deathDateDay.value || null
-    }
-  } else {
-    characterData.value.deathDate = null
-  }
+// Watch death date and update characterData
+watch(deathDate.dateObject, (newValue) => {
+  characterData.value.deathDate = newValue
 })
 
 function addAlias() {
@@ -486,18 +362,13 @@ onMounted(async () => {
         description: charactersStore.currentCharacter.description || '',
       }
 
-      // Extract birth date components
+      // Load birth and death dates using the composable
       if (charactersStore.currentCharacter.birthDate) {
-        birthDateYear.value = charactersStore.currentCharacter.birthDate.year || null
-        birthDateMonth.value = charactersStore.currentCharacter.birthDate.month || null
-        birthDateDay.value = charactersStore.currentCharacter.birthDate.day || null
+        birthDate.loadDate(charactersStore.currentCharacter.birthDate)
       }
 
-      // Extract death date components
       if (charactersStore.currentCharacter.deathDate) {
-        deathDateYear.value = charactersStore.currentCharacter.deathDate.year || null
-        deathDateMonth.value = charactersStore.currentCharacter.deathDate.month || null
-        deathDateDay.value = charactersStore.currentCharacter.deathDate.day || null
+        deathDate.loadDate(charactersStore.currentCharacter.deathDate)
       }
     }
   }
