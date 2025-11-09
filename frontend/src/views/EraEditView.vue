@@ -39,442 +39,70 @@
         ></textarea>
       </div>
 
-      <!-- START DATE SECTION -->
-      <div class="mb-8 p-4 border border-gray-200 rounded">
-        <h2 class="text-xl font-semibold mb-4">Start Date</h2>
-
-        <!-- Start Date Type -->
-        <div class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Date Type *</label>
-          <select
-            v-model="eraData.startDateType"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-          >
-            <option value="Exact">Exact</option>
-            <option value="Approximation">Approximation</option>
-            <option value="Relative">Relative</option>
-          </select>
-        </div>
-
-        <!-- Exact Start Date -->
-        <div v-if="eraData.startDateType === 'Exact'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Date</label>
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Year *</label>
-              <input
-                v-model.number="startExactYear"
-                type="number"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="1500"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Month (1-12)</label>
-              <input
-                v-model.number="startExactMonth"
-                type="number"
-                min="1"
-                max="12"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="1"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Day (1-31)</label>
-              <input
-                v-model.number="startExactDay"
-                type="number"
-                min="1"
-                max="31"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="1"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Relative Start Date -->
-        <div v-if="eraData.startDateType === 'Relative'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Reference Type *</label>
-          <select
-            v-model="startRelativeType"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary mb-4"
-          >
-            <option value="era">Relative to Era</option>
-            <option value="event">Relative to Event</option>
-          </select>
-
-          <!-- Search for Era -->
-          <div v-if="startRelativeType === 'era'" class="relative mb-4">
-            <label class="block text-sm font-semibold mb-2">Select Era *</label>
-            <input
-              v-model="startRelativeEraSearch"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="Start typing era name..."
-              @input="filterStartEras"
-              @focus="showStartEraSuggestions = true"
-              @blur="() => setTimeout(() => showStartEraSuggestions = false, 200)"
-            />
-
-            <div
-              v-if="showStartEraSuggestions && filteredStartEraSuggestions.length > 0"
-              class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
-            >
-              <button
-                v-for="era in filteredStartEraSuggestions"
-                :key="era._id"
-                type="button"
-                @mousedown.prevent="selectStartRelativeEra(era)"
-                class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-              >
-                <div class="font-semibold">{{ era.name }}</div>
-                <div class="text-xs text-gray-500">{{ era.startDisplayYear ? `Starts: Year ${era.startDisplayYear}` : 'Unknown date' }}</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Search for Event -->
-          <div v-if="startRelativeType === 'event'" class="relative mb-4">
-            <label class="block text-sm font-semibold mb-2">Select Event *</label>
-            <input
-              v-model="startRelativeEventSearch"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="Start typing event name..."
-              @input="filterStartEvents"
-              @focus="showStartEventSuggestions = true"
-              @blur="() => setTimeout(() => showStartEventSuggestions = false, 200)"
-            />
-
-            <div
-              v-if="showStartEventSuggestions && filteredStartEventSuggestions.length > 0"
-              class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
-            >
-              <button
-                v-for="evt in filteredStartEventSuggestions"
-                :key="evt._id"
-                type="button"
-                @mousedown.prevent="selectStartRelativeEvent(evt)"
-                class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-              >
-                <div class="font-semibold">{{ evt.name }}</div>
-                <div class="text-xs text-gray-500">{{ evt.type }} - {{ evt.displayYear ? `Year ${evt.displayYear}` : 'Unknown date' }}</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Selected Reference Display -->
-          <div v-if="selectedStartRelativeEra || selectedStartRelativeEvent" class="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="font-semibold">{{ selectedStartRelativeEra?.name || selectedStartRelativeEvent?.name }}</div>
-                <div class="text-sm text-gray-600">
-                  <span v-if="selectedStartRelativeEra">Era - Starts: Year {{ selectedStartRelativeEra.startDisplayYear || 'Unknown' }}</span>
-                  <span v-if="selectedStartRelativeEvent">{{ selectedStartRelativeEvent.type }} - Year {{ selectedStartRelativeEvent.displayYear || 'Unknown' }}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                @click="clearStartRelative"
-                class="text-red-500 hover:text-red-700 font-bold"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <!-- Vague Relative Checkbox -->
-          <div class="mb-3">
-            <label class="flex items-center gap-2">
-              <input
-                v-model="startIsVagueRelative"
-                type="checkbox"
-                class="rounded"
-              />
-              <span class="text-sm font-semibold">Vague offset (e.g., "some days after" without exact count)</span>
-            </label>
-          </div>
-
-          <!-- Offset Configuration -->
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-semibold mb-2">
-                Offset Amount {{ startIsVagueRelative ? '(optional)' : '*' }}
-              </label>
-              <input
-                v-model.number="startOffsetAmount"
-                type="number"
-                :required="!startIsVagueRelative"
-                :disabled="startIsVagueRelative"
-                min="0"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary disabled:bg-gray-100"
-                :placeholder="startIsVagueRelative ? 'N/A' : 'e.g., 2'"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">Direction *</label>
-              <select
-                v-model="startDirection"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              >
-                <option value="Before">Before</option>
-                <option value="After">After</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">Time Unit *</label>
-              <select
-                v-model="startTimeUnit"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              >
-                <option value="Minutes">Minutes</option>
-                <option value="Hours">Hours</option>
-                <option value="Days">Days</option>
-                <option value="Weeks">Weeks</option>
-                <option value="Months">Months</option>
-                <option value="Years">Years</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Approximation Start Date -->
-        <div v-if="eraData.startDateType === 'Approximation'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Approximate Description *</label>
-          <input
-            v-model="startApproximateDescription"
-            type="text"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-            placeholder="e.g., During the Void Century"
-          />
-        </div>
+      <!-- START DATE using DateInput Component -->
+      <div class="mb-8">
+        <DateInput
+          label="Start Date"
+          :date-type="eraData.startDateType"
+          @update:date-type="eraData.startDateType = $event"
+          :exact-year="startExactYear"
+          @update:exact-year="startExactYear = $event"
+          :exact-month="startExactMonth"
+          @update:exact-month="startExactMonth = $event"
+          :exact-day="startExactDay"
+          @update:exact-day="startExactDay = $event"
+          :relative-type="startRelativeType"
+          @update:relative-type="startRelativeType = $event"
+          :selected-relative-era="selectedStartRelativeEra"
+          @update:selected-relative-era="selectedStartRelativeEra = $event"
+          :selected-relative-event="selectedStartRelativeEvent"
+          @update:selected-relative-event="selectedStartRelativeEvent = $event"
+          :offset-amount="startOffsetAmount"
+          @update:offset-amount="startOffsetAmount = $event"
+          :direction="startDirection"
+          @update:direction="startDirection = $event"
+          :time-unit="startTimeUnit"
+          @update:time-unit="startTimeUnit = $event"
+          :is-vague-relative="startIsVagueRelative"
+          @update:is-vague-relative="startIsVagueRelative = $event"
+          :approximate-description="startApproximateDescription"
+          @update:approximate-description="startApproximateDescription = $event"
+          :eras="erasStore.eras.filter(e => e._id !== eraId)"
+          :events="eventsStore.events"
+        />
       </div>
 
-      <!-- END DATE SECTION -->
-      <div class="mb-8 p-4 border border-gray-200 rounded">
-        <h2 class="text-xl font-semibold mb-4">End Date</h2>
-
-        <!-- End Date Type -->
-        <div class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Date Type *</label>
-          <select
-            v-model="eraData.endDateType"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-          >
-            <option value="Exact">Exact</option>
-            <option value="Approximation">Approximation</option>
-            <option value="Relative">Relative</option>
-          </select>
-        </div>
-
-        <!-- Exact End Date -->
-        <div v-if="eraData.endDateType === 'Exact'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Date</label>
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Year *</label>
-              <input
-                v-model.number="endExactYear"
-                type="number"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="1550"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Month (1-12)</label>
-              <input
-                v-model.number="endExactMonth"
-                type="number"
-                min="1"
-                max="12"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="12"
-              />
-            </div>
-            <div>
-              <label class="block text-xs text-gray-600 mb-1">Day (1-31)</label>
-              <input
-                v-model.number="endExactDay"
-                type="number"
-                min="1"
-                max="31"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-                placeholder="31"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Relative End Date -->
-        <div v-if="eraData.endDateType === 'Relative'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Reference Type *</label>
-          <select
-            v-model="endRelativeType"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary mb-4"
-          >
-            <option value="era">Relative to Era</option>
-            <option value="event">Relative to Event</option>
-          </select>
-
-          <!-- Search for Era -->
-          <div v-if="endRelativeType === 'era'" class="relative mb-4">
-            <label class="block text-sm font-semibold mb-2">Select Era *</label>
-            <input
-              v-model="endRelativeEraSearch"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="Start typing era name..."
-              @input="filterEndEras"
-              @focus="showEndEraSuggestions = true"
-              @blur="() => setTimeout(() => showEndEraSuggestions = false, 200)"
-            />
-
-            <div
-              v-if="showEndEraSuggestions && filteredEndEraSuggestions.length > 0"
-              class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
-            >
-              <button
-                v-for="era in filteredEndEraSuggestions"
-                :key="era._id"
-                type="button"
-                @mousedown.prevent="selectEndRelativeEra(era)"
-                class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-              >
-                <div class="font-semibold">{{ era.name }}</div>
-                <div class="text-xs text-gray-500">{{ era.endDisplayYear ? `Ends: Year ${era.endDisplayYear}` : 'Unknown date' }}</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Search for Event -->
-          <div v-if="endRelativeType === 'event'" class="relative mb-4">
-            <label class="block text-sm font-semibold mb-2">Select Event *</label>
-            <input
-              v-model="endRelativeEventSearch"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              placeholder="Start typing event name..."
-              @input="filterEndEvents"
-              @focus="showEndEventSuggestions = true"
-              @blur="() => setTimeout(() => showEndEventSuggestions = false, 200)"
-            />
-
-            <div
-              v-if="showEndEventSuggestions && filteredEndEventSuggestions.length > 0"
-              class="absolute z-10 w-full bg-white border border-gray-300 rounded shadow-lg max-h-48 overflow-y-auto mt-1"
-            >
-              <button
-                v-for="evt in filteredEndEventSuggestions"
-                :key="evt._id"
-                type="button"
-                @mousedown.prevent="selectEndRelativeEvent(evt)"
-                class="w-full px-4 py-2 text-left hover:bg-blue-50 focus:bg-blue-50 focus:outline-none"
-              >
-                <div class="font-semibold">{{ evt.name }}</div>
-                <div class="text-xs text-gray-500">{{ evt.type }} - {{ evt.displayYear ? `Year ${evt.displayYear}` : 'Unknown date' }}</div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Selected Reference Display -->
-          <div v-if="selectedEndRelativeEra || selectedEndRelativeEvent" class="mb-4 p-3 bg-blue-50 rounded border border-blue-200">
-            <div class="flex justify-between items-start">
-              <div>
-                <div class="font-semibold">{{ selectedEndRelativeEra?.name || selectedEndRelativeEvent?.name }}</div>
-                <div class="text-sm text-gray-600">
-                  <span v-if="selectedEndRelativeEra">Era - Ends: Year {{ selectedEndRelativeEra.endDisplayYear || 'Unknown' }}</span>
-                  <span v-if="selectedEndRelativeEvent">{{ selectedEndRelativeEvent.type }} - Year {{ selectedEndRelativeEvent.displayYear || 'Unknown' }}</span>
-                </div>
-              </div>
-              <button
-                type="button"
-                @click="clearEndRelative"
-                class="text-red-500 hover:text-red-700 font-bold"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-
-          <!-- Vague Relative Checkbox -->
-          <div class="mb-3">
-            <label class="flex items-center gap-2">
-              <input
-                v-model="endIsVagueRelative"
-                type="checkbox"
-                class="rounded"
-              />
-              <span class="text-sm font-semibold">Vague offset (e.g., "some days after" without exact count)</span>
-            </label>
-          </div>
-
-          <!-- Offset Configuration -->
-          <div class="grid grid-cols-3 gap-4">
-            <div>
-              <label class="block text-sm font-semibold mb-2">
-                Offset Amount {{ endIsVagueRelative ? '(optional)' : '*' }}
-              </label>
-              <input
-                v-model.number="endOffsetAmount"
-                type="number"
-                :required="!endIsVagueRelative"
-                :disabled="endIsVagueRelative"
-                min="0"
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary disabled:bg-gray-100"
-                :placeholder="endIsVagueRelative ? 'N/A' : 'e.g., 2'"
-              />
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">Direction *</label>
-              <select
-                v-model="endDirection"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              >
-                <option value="Before">Before</option>
-                <option value="After">After</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-sm font-semibold mb-2">Time Unit *</label>
-              <select
-                v-model="endTimeUnit"
-                required
-                class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-              >
-                <option value="Minutes">Minutes</option>
-                <option value="Hours">Hours</option>
-                <option value="Days">Days</option>
-                <option value="Weeks">Weeks</option>
-                <option value="Months">Months</option>
-                <option value="Years">Years</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Approximation End Date -->
-        <div v-if="eraData.endDateType === 'Approximation'" class="mb-4">
-          <label class="block text-sm font-semibold mb-2">Approximate Description *</label>
-          <input
-            v-model="endApproximateDescription"
-            type="text"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-            placeholder="e.g., End of the Void Century"
-          />
-        </div>
+      <!-- END DATE using DateInput Component -->
+      <div class="mb-8">
+        <DateInput
+          label="End Date"
+          :date-type="eraData.endDateType"
+          @update:date-type="eraData.endDateType = $event"
+          :exact-year="endExactYear"
+          @update:exact-year="endExactYear = $event"
+          :exact-month="endExactMonth"
+          @update:exact-month="endExactMonth = $event"
+          :exact-day="endExactDay"
+          @update:exact-day="endExactDay = $event"
+          :relative-type="endRelativeType"
+          @update:relative-type="endRelativeType = $event"
+          :selected-relative-era="selectedEndRelativeEra"
+          @update:selected-relative-era="selectedEndRelativeEra = $event"
+          :selected-relative-event="selectedEndRelativeEvent"
+          @update:selected-relative-event="selectedEndRelativeEvent = $event"
+          :offset-amount="endOffsetAmount"
+          @update:offset-amount="endOffsetAmount = $event"
+          :direction="endDirection"
+          @update:direction="endDirection = $event"
+          :time-unit="endTimeUnit"
+          @update:time-unit="endTimeUnit = $event"
+          :is-vague-relative="endIsVagueRelative"
+          @update:is-vague-relative="endIsVagueRelative = $event"
+          :approximate-description="endApproximateDescription"
+          @update:approximate-description="endApproximateDescription = $event"
+          :eras="erasStore.eras.filter(e => e._id !== eraId)"
+          :events="eventsStore.events"
+        />
       </div>
 
       <!-- Form Actions -->
@@ -497,10 +125,11 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, watch } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useErasStore } from '../stores/eras'
 import { useEventsStore } from '../stores/events'
+import DateInput from '../components/DateInput.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -521,15 +150,9 @@ const eraData = ref({
 const startExactYear = ref(null)
 const startExactMonth = ref(null)
 const startExactDay = ref(null)
-const startRelativeType = ref('era') // 'era' or 'event'
-const startRelativeEraSearch = ref('')
-const startRelativeEventSearch = ref('')
-const showStartEraSuggestions = ref(false)
-const showStartEventSuggestions = ref(false)
+const startRelativeType = ref('era')
 const selectedStartRelativeEra = ref(null)
 const selectedStartRelativeEvent = ref(null)
-const filteredStartEraSuggestions = ref([])
-const filteredStartEventSuggestions = ref([])
 const startIsVagueRelative = ref(false)
 const startOffsetAmount = ref(null)
 const startDirection = ref('After')
@@ -540,92 +163,14 @@ const startApproximateDescription = ref('')
 const endExactYear = ref(null)
 const endExactMonth = ref(null)
 const endExactDay = ref(null)
-const endRelativeType = ref('era') // 'era' or 'event'
-const endRelativeEraSearch = ref('')
-const endRelativeEventSearch = ref('')
-const showEndEraSuggestions = ref(false)
-const showEndEventSuggestions = ref(false)
+const endRelativeType = ref('era')
 const selectedEndRelativeEra = ref(null)
 const selectedEndRelativeEvent = ref(null)
-const filteredEndEraSuggestions = ref([])
-const filteredEndEventSuggestions = ref([])
 const endIsVagueRelative = ref(false)
 const endOffsetAmount = ref(null)
 const endDirection = ref('After')
 const endTimeUnit = ref('Days')
 const endApproximateDescription = ref('')
-
-// Filter functions for start date
-function filterStartEras() {
-  const query = startRelativeEraSearch.value.toLowerCase()
-  filteredStartEraSuggestions.value = erasStore.eras
-    .filter(era => era._id !== eraId.value && era.name.toLowerCase().includes(query))
-    .slice(0, 10)
-}
-
-function filterStartEvents() {
-  const query = startRelativeEventSearch.value.toLowerCase()
-  filteredStartEventSuggestions.value = eventsStore.events
-    .filter(evt => evt.name.toLowerCase().includes(query))
-    .slice(0, 10)
-}
-
-function selectStartRelativeEra(era) {
-  selectedStartRelativeEra.value = era
-  selectedStartRelativeEvent.value = null
-  startRelativeEraSearch.value = era.name
-  showStartEraSuggestions.value = false
-}
-
-function selectStartRelativeEvent(evt) {
-  selectedStartRelativeEvent.value = evt
-  selectedStartRelativeEra.value = null
-  startRelativeEventSearch.value = evt.name
-  showStartEventSuggestions.value = false
-}
-
-function clearStartRelative() {
-  selectedStartRelativeEra.value = null
-  selectedStartRelativeEvent.value = null
-  startRelativeEraSearch.value = ''
-  startRelativeEventSearch.value = ''
-}
-
-// Filter functions for end date
-function filterEndEras() {
-  const query = endRelativeEraSearch.value.toLowerCase()
-  filteredEndEraSuggestions.value = erasStore.eras
-    .filter(era => era._id !== eraId.value && era.name.toLowerCase().includes(query))
-    .slice(0, 10)
-}
-
-function filterEndEvents() {
-  const query = endRelativeEventSearch.value.toLowerCase()
-  filteredEndEventSuggestions.value = eventsStore.events
-    .filter(evt => evt.name.toLowerCase().includes(query))
-    .slice(0, 10)
-}
-
-function selectEndRelativeEra(era) {
-  selectedEndRelativeEra.value = era
-  selectedEndRelativeEvent.value = null
-  endRelativeEraSearch.value = era.name
-  showEndEraSuggestions.value = false
-}
-
-function selectEndRelativeEvent(evt) {
-  selectedEndRelativeEvent.value = evt
-  selectedEndRelativeEra.value = null
-  endRelativeEventSearch.value = evt.name
-  showEndEventSuggestions.value = false
-}
-
-function clearEndRelative() {
-  selectedEndRelativeEra.value = null
-  selectedEndRelativeEvent.value = null
-  endRelativeEraSearch.value = ''
-  endRelativeEventSearch.value = ''
-}
 
 // Convert UI state to backend format
 function buildEraPayload() {
@@ -747,14 +292,12 @@ function loadEraData(era) {
       const refEra = erasStore.eras.find(e => e._id === era.startRelativeEraId)
       if (refEra) {
         selectedStartRelativeEra.value = refEra
-        startRelativeEraSearch.value = refEra.name
       }
     } else if (era.startRelativeEventId) {
       startRelativeType.value = 'event'
       const refEvent = eventsStore.events.find(e => e._id === era.startRelativeEventId)
       if (refEvent) {
         selectedStartRelativeEvent.value = refEvent
-        startRelativeEventSearch.value = refEvent.name
       }
     }
 
@@ -782,14 +325,12 @@ function loadEraData(era) {
       const refEra = erasStore.eras.find(e => e._id === era.endRelativeEraId)
       if (refEra) {
         selectedEndRelativeEra.value = refEra
-        endRelativeEraSearch.value = refEra.name
       }
     } else if (era.endRelativeEventId) {
       endRelativeType.value = 'event'
       const refEvent = eventsStore.events.find(e => e._id === era.endRelativeEventId)
       if (refEvent) {
         selectedEndRelativeEvent.value = refEvent
-        endRelativeEventSearch.value = refEvent.name
       }
     }
 
