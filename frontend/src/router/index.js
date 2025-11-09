@@ -16,6 +16,54 @@ import EraEditView from '../views/EraEditView.vue'
 import AdminUsersView from '../views/AdminUsersView.vue'
 import { useAuthStore } from '../stores/auth'
 
+// Navigation guard for routes requiring editor role
+async function requireEditor(to, from, next) {
+  const authStore = useAuthStore()
+
+  // Wait for auth to finish loading if it's still loading
+  if (authStore.loading) {
+    await new Promise((resolve) => {
+      const unwatch = authStore.$subscribe(() => {
+        if (!authStore.loading) {
+          unwatch()
+          resolve()
+        }
+      })
+    })
+  }
+
+  // Check if user is editor or admin
+  if (authStore.isEditor) {
+    next()
+  } else {
+    next('/')
+  }
+}
+
+// Navigation guard for routes requiring admin role
+async function requireAdmin(to, from, next) {
+  const authStore = useAuthStore()
+
+  // Wait for auth to finish loading if it's still loading
+  if (authStore.loading) {
+    await new Promise((resolve) => {
+      const unwatch = authStore.$subscribe(() => {
+        if (!authStore.loading) {
+          unwatch()
+          resolve()
+        }
+      })
+    })
+  }
+
+  // Check if user is admin
+  if (authStore.isAdmin) {
+    next()
+  } else {
+    next('/')
+  }
+}
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
@@ -33,11 +81,13 @@ const router = createRouter({
       path: '/event/:id/edit',
       name: 'event-edit',
       component: EventEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/event/new',
       name: 'event-new',
       component: EventEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/characters',
@@ -53,11 +103,13 @@ const router = createRouter({
       path: '/characters/:id/edit',
       name: 'character-edit',
       component: CharacterEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/characters/new',
       name: 'character-new',
       component: CharacterEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/locations',
@@ -73,11 +125,13 @@ const router = createRouter({
       path: '/locations/:id/edit',
       name: 'location-edit',
       component: LocationEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/locations/new',
       name: 'location-new',
       component: LocationEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/sagas',
@@ -88,6 +142,13 @@ const router = createRouter({
       path: '/sagas/:id',
       name: 'saga-edit',
       component: SagaEditView,
+      beforeEnter: requireEditor,
+    },
+    {
+      path: '/sagas/new',
+      name: 'saga-new',
+      component: SagaEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/arcs',
@@ -98,6 +159,13 @@ const router = createRouter({
       path: '/arcs/:id',
       name: 'arc-edit',
       component: ArcEditView,
+      beforeEnter: requireEditor,
+    },
+    {
+      path: '/arcs/new',
+      name: 'arc-new',
+      component: ArcEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/eras',
@@ -108,33 +176,19 @@ const router = createRouter({
       path: '/eras/:id',
       name: 'era-edit',
       component: EraEditView,
+      beforeEnter: requireEditor,
+    },
+    {
+      path: '/eras/new',
+      name: 'era-new',
+      component: EraEditView,
+      beforeEnter: requireEditor,
     },
     {
       path: '/admin/users',
       name: 'admin-users',
       component: AdminUsersView,
-      beforeEnter: async (to, from, next) => {
-        const authStore = useAuthStore()
-
-        // Wait for auth to finish loading if it's still loading
-        if (authStore.loading) {
-          await new Promise((resolve) => {
-            const unwatch = authStore.$subscribe(() => {
-              if (!authStore.loading) {
-                unwatch()
-                resolve()
-              }
-            })
-          })
-        }
-
-        // Check if user is admin
-        if (authStore.isAdmin) {
-          next()
-        } else {
-          next('/')
-        }
-      },
+      beforeEnter: requireAdmin,
     },
   ],
 })

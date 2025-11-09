@@ -73,11 +73,20 @@ describe('ErasView', () => {
       expect(erasStore.fetchAll).toHaveBeenCalled()
     })
 
-    it('shows Create New Era button', async () => {
+    it('shows Create New Era button when user is editor', async () => {
+      authStore.user = { role: 'Editor' }
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
       expect(wrapper.text()).toContain('Create New Era')
+    })
+
+    it('hides Create New Era button when user is not authenticated', async () => {
+      authStore.user = null
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.text()).not.toContain('Create New Era')
     })
   })
 
@@ -392,7 +401,8 @@ describe('ErasView', () => {
       ]
     })
 
-    it('shows edit button for all eras', async () => {
+    it('shows edit button for all eras when user is editor', async () => {
+      authStore.user = { role: 'Editor' }
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
@@ -400,12 +410,31 @@ describe('ErasView', () => {
       expect(editButtons.length).toBeGreaterThan(0)
     })
 
-    it('shows delete button for all eras', async () => {
+    it('hides edit button when user is not authenticated', async () => {
+      authStore.user = null
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      const editButtons = wrapper.findAll('a').filter(a => a.text() === 'Edit')
+      expect(editButtons.length).toBe(0)
+    })
+
+    it('shows delete button for all eras when user is admin', async () => {
+      authStore.user = { role: 'Admin' }
       const wrapper = mountComponent()
       await wrapper.vm.$nextTick()
 
       const deleteButtons = wrapper.findAll('button').filter(b => b.text() === 'Delete')
       expect(deleteButtons.length).toBeGreaterThan(0)
+    })
+
+    it('hides delete button when user is not admin', async () => {
+      authStore.user = { role: 'Editor' }
+      const wrapper = mountComponent()
+      await wrapper.vm.$nextTick()
+
+      const deleteButtons = wrapper.findAll('button').filter(b => b.text() === 'Delete')
+      expect(deleteButtons.length).toBe(0)
     })
 
     it('shows view timeline button for all eras', async () => {

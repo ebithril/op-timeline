@@ -13,6 +13,8 @@ import SagasView from '../views/SagasView.vue'
 import SagaEditView from '../views/SagaEditView.vue'
 import ArcsView from '../views/ArcsView.vue'
 import ArcEditView from '../views/ArcEditView.vue'
+import ErasView from '../views/ErasView.vue'
+import EraEditView from '../views/EraEditView.vue'
 
 // Import the route configuration
 const routes = [
@@ -87,6 +89,11 @@ const routes = [
     component: SagaEditView,
   },
   {
+    path: '/sagas/new',
+    name: 'saga-new',
+    component: SagaEditView,
+  },
+  {
     path: '/arcs',
     name: 'arcs',
     component: ArcsView,
@@ -95,6 +102,26 @@ const routes = [
     path: '/arcs/:id',
     name: 'arc-edit',
     component: ArcEditView,
+  },
+  {
+    path: '/arcs/new',
+    name: 'arc-new',
+    component: ArcEditView,
+  },
+  {
+    path: '/eras',
+    name: 'eras',
+    component: ErasView,
+  },
+  {
+    path: '/eras/:id',
+    name: 'era-edit',
+    component: EraEditView,
+  },
+  {
+    path: '/eras/new',
+    name: 'era-new',
+    component: EraEditView,
   },
 ]
 
@@ -124,7 +151,7 @@ describe('Router', () => {
 
   describe('route definitions', () => {
     it('defines the correct number of routes', () => {
-      expect(testRouter.getRoutes()).toHaveLength(16)
+      expect(testRouter.getRoutes()).toHaveLength(21)
     })
 
     it('has all route names defined', () => {
@@ -143,8 +170,13 @@ describe('Router', () => {
       expect(routeNames).toContain('location-new')
       expect(routeNames).toContain('sagas')
       expect(routeNames).toContain('saga-edit')
+      expect(routeNames).toContain('saga-new')
       expect(routeNames).toContain('arcs')
       expect(routeNames).toContain('arc-edit')
+      expect(routeNames).toContain('arc-new')
+      expect(routeNames).toContain('eras')
+      expect(routeNames).toContain('era-edit')
+      expect(routeNames).toContain('era-new')
     })
   })
 
@@ -247,6 +279,12 @@ describe('Router', () => {
       expect(testRouter.currentRoute.value.params.id).toBe('water7-saga-123')
       expect(testRouter.currentRoute.value.matched[0].components.default).toBe(SagaEditView)
     })
+
+    it('matches /sagas/new to saga-new', async () => {
+      await testRouter.push('/sagas/new')
+      expect(testRouter.currentRoute.value.name).toBe('saga-new')
+      expect(testRouter.currentRoute.value.matched[0].components.default).toBe(SagaEditView)
+    })
   })
 
   describe('arc routes', () => {
@@ -261,6 +299,33 @@ describe('Router', () => {
       expect(testRouter.currentRoute.value.name).toBe('arc-edit')
       expect(testRouter.currentRoute.value.params.id).toBe('enies-lobby-123')
       expect(testRouter.currentRoute.value.matched[0].components.default).toBe(ArcEditView)
+    })
+
+    it('matches /arcs/new to arc-new', async () => {
+      await testRouter.push('/arcs/new')
+      expect(testRouter.currentRoute.value.name).toBe('arc-new')
+      expect(testRouter.currentRoute.value.matched[0].components.default).toBe(ArcEditView)
+    })
+  })
+
+  describe('era routes', () => {
+    it('matches /eras to eras view', async () => {
+      await testRouter.push('/eras')
+      expect(testRouter.currentRoute.value.name).toBe('eras')
+      expect(testRouter.currentRoute.value.matched[0].components.default).toBe(ErasView)
+    })
+
+    it('matches /eras/:id to era-edit', async () => {
+      await testRouter.push('/eras/golden-age-123')
+      expect(testRouter.currentRoute.value.name).toBe('era-edit')
+      expect(testRouter.currentRoute.value.params.id).toBe('golden-age-123')
+      expect(testRouter.currentRoute.value.matched[0].components.default).toBe(EraEditView)
+    })
+
+    it('matches /eras/new to era-new', async () => {
+      await testRouter.push('/eras/new')
+      expect(testRouter.currentRoute.value.name).toBe('era-new')
+      expect(testRouter.currentRoute.value.matched[0].components.default).toBe(EraEditView)
     })
   })
 
