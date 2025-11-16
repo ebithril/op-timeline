@@ -1,6 +1,6 @@
 <template>
-  <div id="app" class="min-h-screen bg-one-piece-parchment-light">
-    <nav class="bg-one-piece-ocean text-white shadow-lg border-b-4 border-one-piece-secondary">
+  <div id="app" class="min-h-screen bg-gray-50">
+    <nav class="bg-one-piece-blue text-white shadow-lg border-b-4 border-one-piece-yellow">
       <div class="container mx-auto px-4 py-4">
         <div class="flex justify-between items-center">
           <router-link to="/" class="text-2xl font-bold">
@@ -54,7 +54,7 @@
             <router-link
               v-if="authStore.isEditor"
               to="/event/new"
-              class="bg-one-piece-secondary text-one-piece-dark px-4 py-2 rounded font-bold hover:bg-yellow-400 shadow-md"
+              class="bg-one-piece-red text-white px-4 py-2 rounded font-bold hover:bg-red-700 shadow-md transition-colors"
             >
               Add Event
             </router-link>
@@ -72,7 +72,7 @@
             <button
               v-else
               @click="showApiKeyDialog = true"
-              class="bg-one-piece-secondary text-one-piece-dark px-4 py-2 rounded font-bold hover:bg-yellow-400 shadow-md"
+              class="bg-one-piece-yellow text-gray-900 px-4 py-2 rounded font-bold hover:bg-yellow-400 shadow-md transition-colors"
             >
               Login
             </button>
@@ -91,25 +91,25 @@
       class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       @click.self="showApiKeyDialog = false"
     >
-      <div class="bg-one-piece-parchment p-6 rounded-lg shadow-xl max-w-md w-full border-4 border-one-piece-wood">
-        <h2 class="text-2xl font-bold mb-4 text-one-piece-dark">Enter API Key</h2>
+      <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full border-t-4 border-one-piece-blue">
+        <h2 class="text-2xl font-bold mb-4 text-gray-900">Enter API Key</h2>
         <input
           v-model="apiKeyInput"
           type="text"
           placeholder="Your API Key"
-          class="w-full px-4 py-2 border-2 border-one-piece-parchment-dark rounded mb-4 bg-one-piece-parchment-light"
+          class="w-full px-4 py-2 border-2 border-gray-300 rounded mb-4 focus:border-one-piece-blue focus:outline-none"
           @keyup.enter="submitApiKey"
         />
         <div class="flex justify-end space-x-2">
           <button
             @click="showApiKeyDialog = false"
-            class="px-4 py-2 bg-one-piece-parchment-medium rounded hover:bg-one-piece-parchment-dark"
+            class="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 transition-colors"
           >
             Cancel
           </button>
           <button
             @click="submitApiKey"
-            class="px-4 py-2 bg-one-piece-ocean text-white rounded hover:bg-one-piece-ocean-light font-bold"
+            class="px-4 py-2 bg-one-piece-blue text-white rounded hover:bg-one-piece-blue-light font-bold transition-colors"
           >
             Login
           </button>

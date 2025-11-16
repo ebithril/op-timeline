@@ -1,16 +1,16 @@
 <template>
   <div class="timeline-view">
-    <h1 class="text-3xl font-bold mb-6 text-one-piece-dark">One Piece Timeline</h1>
+    <h1 class="text-3xl font-bold mb-6 text-gray-900">One Piece Timeline</h1>
 
     <!-- Controls Container -->
-    <div class="bg-one-piece-parchment p-4 rounded-lg shadow-lg border-2 border-one-piece-parchment-dark mb-6">
+    <div class="bg-white p-4 rounded-lg shadow-md border-t-4 border-one-piece-blue mb-6">
       <!-- Year Display Format Selector -->
       <div class="mb-4 pb-4 border-b border-gray-200">
         <label class="block text-sm font-semibold mb-2">Display Years As:</label>
         <select
           v-model="yearDisplayMode"
           @change="saveDisplayModePreference"
-          class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+          class="px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-blue"
         >
           <option
             v-for="(label, mode) in displayModeLabels"
@@ -30,14 +30,14 @@
           <!-- AND/OR Toggle -->
           <div v-if="selectedCharacters.length > 1" class="flex items-center gap-2">
             <span class="text-sm text-gray-600">Match:</span>
-            <div class="flex bg-one-piece-parchment-medium rounded">
+            <div class="flex bg-gray-200 rounded">
               <button
                 @click="characterFilterMode = 'any'"
                 :class="[
                   'px-3 py-1 text-sm rounded transition-colors',
                   characterFilterMode === 'any'
-                    ? 'bg-one-piece-ocean text-white'
-                    : 'text-gray-700 hover:bg-one-piece-parchment-dark'
+                    ? 'bg-one-piece-blue text-white'
+                    : 'text-gray-700 hover:bg-gray-300'
                 ]"
               >
                 Any
@@ -47,8 +47,8 @@
                 :class="[
                   'px-3 py-1 text-sm rounded transition-colors',
                   characterFilterMode === 'all'
-                    ? 'bg-one-piece-ocean text-white'
-                    : 'text-gray-700 hover:bg-one-piece-parchment-dark'
+                    ? 'bg-one-piece-blue text-white'
+                    : 'text-gray-700 hover:bg-gray-300'
                 ]"
               >
                 All
@@ -66,19 +66,19 @@
             @blur="hideDropdownDelayed"
             type="text"
             placeholder="Search characters to filter..."
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-blue"
           />
 
           <!-- Character Suggestions Dropdown -->
           <div
             v-if="showCharacterDropdown && filteredCharacterSuggestions.length > 0"
-            class="absolute z-10 w-full mt-1 bg-one-piece-parchment border-2 border-one-piece-wood rounded shadow-lg max-h-60 overflow-y-auto"
+            class="absolute z-10 w-full mt-1 bg-white border-2 border-gray-300 rounded shadow-lg max-h-60 overflow-y-auto"
           >
             <button
               v-for="character in filteredCharacterSuggestions"
               :key="character._id"
               @mousedown.prevent="addCharacterFilter(character.name)"
-              class="w-full text-left px-4 py-2 hover:bg-one-piece-parchment-medium transition-colors"
+              class="w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors"
             >
               {{ character.name }}
             </button>
@@ -90,7 +90,7 @@
           <div
             v-for="characterName in selectedCharacters"
             :key="characterName"
-            class="flex items-center gap-2 px-3 py-1 bg-one-piece-ocean text-white rounded shadow-md"
+            class="flex items-center gap-2 px-3 py-1 bg-one-piece-blue text-white rounded-full shadow-sm"
           >
             <span>{{ characterName }}</span>
             <button
@@ -127,8 +127,8 @@
         <!-- Era Sections -->
         <div v-for="(eraData, eraIndex) in groupedByEra" :key="eraIndex" class="mb-12">
           <!-- Era Header (if era exists) -->
-          <div v-if="eraData.era" class="mb-6 pb-4 border-b-4 border-one-piece-secondary">
-            <h2 class="text-2xl font-bold text-one-piece-dark">{{ eraData.era.name }}</h2>
+          <div v-if="eraData.era" class="mb-6 pb-4 border-b-4 border-one-piece-yellow">
+            <h2 class="text-2xl font-bold text-gray-900">{{ eraData.era.name }}</h2>
             <p v-if="eraData.era.description" class="text-gray-600 mt-1">{{ eraData.era.description }}</p>
             <p class="text-sm text-gray-500 mt-1">
               {{ formatEraDate(eraData.era.startDate) }} - {{ formatEraDate(eraData.era.endDate) }}
@@ -147,12 +147,12 @@
                 <!-- Vertical Timeline Line -->
                 <div
                   v-if="index < eraData.events.length - 1 || eraIndex < groupedByEra.length - 1"
-                  class="absolute right-0 top-8 bottom-0 w-0.5 bg-one-piece-ink opacity-40"
+                  class="absolute right-0 top-8 bottom-0 w-0.5 bg-one-piece-blue opacity-30"
                 ></div>
 
                 <!-- Date Display -->
                 <div class="relative z-10 inline-block">
-                  <div class="text-2xl font-bold text-one-piece-ocean">
+                  <div class="text-2xl font-bold text-one-piece-blue">
                     {{ getDisplayYear(event) }}
                   </div>
                   <div class="text-sm text-gray-600 mt-1">
@@ -161,12 +161,12 @@
                 </div>
 
                 <!-- Timeline Dot -->
-                <div class="absolute right-0 top-3 w-3 h-3 bg-one-piece-primary rounded-full border-2 border-one-piece-parchment-light shadow-lg transform translate-x-1/2"></div>
+                <div class="absolute right-0 top-3 w-3 h-3 bg-one-piece-red rounded-full border-2 border-white shadow-lg transform translate-x-1/2"></div>
               </div>
 
               <!-- Event Content (Center/Right Side) -->
               <div class="flex-1">
-                <div class="bg-one-piece-parchment-medium p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-one-piece-primary">
+                <div class="bg-white p-5 rounded-lg shadow-md hover:shadow-lg transition-shadow border-l-4 border-one-piece-yellow">
                   <!-- Event Type Badge -->
                   <div class="flex items-center gap-2 mb-2 flex-wrap">
                     <span
@@ -180,10 +180,10 @@
                   </div>
 
                   <!-- Event Title -->
-                  <h3 class="text-xl font-bold mb-2 text-one-piece-dark">
+                  <h3 class="text-xl font-bold mb-2 text-gray-900">
                     <router-link
                       :to="`/event/${event._id}`"
-                      class="hover:text-one-piece-primary transition-colors"
+                      class="hover:text-one-piece-blue transition-colors"
                     >
                       {{ event.name }}
                     </router-link>
@@ -206,14 +206,14 @@
                     <router-link
                       v-if="authStore.isEditor"
                       :to="`/event/${event._id}/edit`"
-                      class="px-3 py-1 bg-one-piece-ocean text-white rounded hover:bg-one-piece-ocean-light text-sm transition-colors"
+                      class="px-3 py-1 bg-one-piece-blue text-white rounded hover:bg-one-piece-blue-light text-sm transition-colors"
                     >
                       Edit
                     </router-link>
                     <button
                       v-if="authStore.isAdmin"
                       @click="deleteEvent(event._id)"
-                      class="px-3 py-1 bg-one-piece-primary text-white rounded hover:bg-red-700 text-sm transition-colors"
+                      class="px-3 py-1 bg-one-piece-red text-white rounded hover:bg-red-700 text-sm transition-colors"
                     >
                       Delete
                     </button>
