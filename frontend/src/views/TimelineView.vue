@@ -259,6 +259,7 @@ const MONTH_NAMES = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December'
 ]
+const DROPDOWN_HIDE_DELAY = 200 // ms - delay before hiding dropdown to allow click events to fire
 
 // Helper function to get event year consistently across all functions
 function getEventYear(event) {
@@ -388,7 +389,7 @@ function hideDropdownDelayed() {
   // Delay hiding to allow click events to fire first
   setTimeout(() => {
     showCharacterDropdown.value = false
-  }, 200)
+  }, DROPDOWN_HIDE_DELAY)
 }
 
 function getEventTypeColor(type) {
