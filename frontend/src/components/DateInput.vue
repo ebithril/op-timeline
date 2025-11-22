@@ -30,7 +30,7 @@
           />
           <span class="text-sm font-semibold">Enter year relative to reference</span>
         </label>
-        <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1539) or timeskip end (1541)</p>
+        <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start ({{ SERIES_START_YEAR }}) or timeskip end ({{ TIMESKIP_END_YEAR }})</p>
       </div>
 
       <label class="block text-sm font-semibold mb-2">Date</label>
@@ -45,8 +45,8 @@
               required
               class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
             >
-              <option :value="1539">Series Start (1539)</option>
-              <option :value="1541">Timeskip End (1541)</option>
+              <option :value="SERIES_START_YEAR">Series Start ({{ SERIES_START_YEAR }})</option>
+              <option :value="TIMESKIP_END_YEAR">Timeskip End ({{ TIMESKIP_END_YEAR }})</option>
             </select>
 
             <!-- Relative offset input -->
@@ -273,6 +273,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+import { SERIES_START_YEAR, TIMESKIP_END_YEAR, relativeToAbsolute } from '../utils/yearDisplay.js'
 
 const props = defineProps({
   label: {
@@ -359,10 +360,7 @@ const filteredEventSuggestions = computed(() => {
 })
 
 const calculatedAbsoluteYear = computed(() => {
-  if (props.referenceYear != null && props.relativeYearOffset != null) {
-    return props.referenceYear + props.relativeYearOffset
-  }
-  return null
+  return relativeToAbsolute(props.relativeYearOffset, props.referenceYear)
 })
 
 // Update methods
