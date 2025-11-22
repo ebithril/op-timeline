@@ -19,18 +19,61 @@
 
     <!-- Exact Date -->
     <div v-if="dateType === 'Exact'" class="mb-4">
+      <!-- Toggle for relative year input -->
+      <div class="mb-3">
+        <label class="flex items-center gap-2">
+          <input
+            :checked="useRelativeYearInput"
+            @input="updateUseRelativeYearInput($event.target.checked)"
+            type="checkbox"
+            class="rounded"
+          />
+          <span class="text-sm font-semibold">Enter year relative to reference</span>
+        </label>
+        <p class="text-xs text-gray-600 mt-1 ml-6">Use this to enter dates relative to series start (1539) or timeskip end (1541)</p>
+      </div>
+
       <label class="block text-sm font-semibold mb-2">Date</label>
       <div class="grid grid-cols-3 gap-4">
         <div>
           <label class="block text-xs text-gray-600 mb-1">Year *</label>
-          <input
-            :value="exactYear"
-            @input="updateExactYear($event.target.value)"
-            type="number"
-            required
-            class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
-            placeholder="1500"
-          />
+          <div v-if="useRelativeYearInput" class="space-y-2">
+            <!-- Reference year selector -->
+            <select
+              :value="referenceYear"
+              @input="updateReferenceYear($event.target.value)"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary text-sm"
+            >
+              <option :value="1539">Series Start (1539)</option>
+              <option :value="1541">Timeskip End (1541)</option>
+            </select>
+
+            <!-- Relative offset input -->
+            <input
+              :value="relativeYearOffset"
+              @input="updateRelativeYearOffset($event.target.value)"
+              type="number"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+              placeholder="e.g., -22 (22 years before)"
+            />
+
+            <!-- Show calculated absolute year -->
+            <p v-if="calculatedAbsoluteYear != null" class="text-xs text-gray-600">
+              = Year {{ calculatedAbsoluteYear }}
+            </p>
+          </div>
+          <div v-else>
+            <input
+              :value="exactYear"
+              @input="updateExactYear($event.target.value)"
+              type="number"
+              required
+              class="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-one-piece-primary"
+              placeholder="1500"
+            />
+          </div>
         </div>
         <div>
           <label class="block text-xs text-gray-600 mb-1">Month (1-12)</label>
@@ -243,6 +286,12 @@ const props = defineProps({
   exactYear: Number,
   exactMonth: Number,
   exactDay: Number,
+  useRelativeYearInput: {
+    type: Boolean,
+    default: false
+  },
+  relativeYearOffset: Number,
+  referenceYear: Number,
   relativeType: {
     type: String,
     default: 'era'
@@ -278,6 +327,9 @@ const emit = defineEmits([
   'update:exactYear',
   'update:exactMonth',
   'update:exactDay',
+  'update:useRelativeYearInput',
+  'update:relativeYearOffset',
+  'update:referenceYear',
   'update:relativeType',
   'update:selectedRelativeEra',
   'update:selectedRelativeEvent',
@@ -304,6 +356,13 @@ const filteredEventSuggestions = computed(() => {
   if (!relativeEventSearch.value) return props.events
   const search = relativeEventSearch.value.toLowerCase()
   return props.events.filter(event => event.name.toLowerCase().includes(search))
+})
+
+const calculatedAbsoluteYear = computed(() => {
+  if (props.referenceYear != null && props.relativeYearOffset != null) {
+    return props.referenceYear + props.relativeYearOffset
+  }
+  return null
 })
 
 // Update methods
@@ -370,6 +429,18 @@ function updateVagueRelative(value) {
 
 function updateApproximateDescription(value) {
   emit('update:approximateDescription', value)
+}
+
+function updateUseRelativeYearInput(value) {
+  emit('update:useRelativeYearInput', value)
+}
+
+function updateRelativeYearOffset(value) {
+  emit('update:relativeYearOffset', value ? Number(value) : null)
+}
+
+function updateReferenceYear(value) {
+  emit('update:referenceYear', value ? Number(value) : null)
 }
 
 function filterEras() {
