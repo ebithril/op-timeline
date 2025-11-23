@@ -58,6 +58,12 @@
           @update:exact-month="exactMonth = $event"
           :exact-day="exactDay"
           @update:exact-day="exactDay = $event"
+          :use-relative-year-input="useRelativeYearInput"
+          @update:use-relative-year-input="useRelativeYearInput = $event"
+          :relative-year-offset="relativeYearOffset"
+          @update:relative-year-offset="relativeYearOffset = $event"
+          :reference-year="referenceYear"
+          @update:reference-year="referenceYear = $event"
           :relative-type="relativeType"
           @update:relative-type="relativeType = $event"
           :selected-relative-era="selectedRelativeEra"
@@ -532,6 +538,11 @@ watch([selectedRelativeEra, selectedRelativeEvent], () => {
 // Watch approximateDescription
 watch(approximateDescription, (newValue) => {
   eventData.value.approximateDescription = newValue
+})
+
+// Watch timeUnit
+watch(timeUnit, (newValue) => {
+  eventData.value.relativeTimeUnit = newValue
 })
 
 // Watch relative year input mode changes (for test compatibility)
