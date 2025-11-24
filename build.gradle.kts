@@ -39,6 +39,10 @@ dependencies {
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine:5.2.1")
     implementation("org.litote.kmongo:kmongo-coroutine-serialization:5.1.0")
 
+    // JSON Patch for diff-based version history
+    implementation("com.flipkart.zjsonpatch:zjsonpatch:0.4.16")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.3")
+
     // Metrics
     implementation("io.ktor:ktor-server-metrics-micrometer")
     implementation("io.micrometer:micrometer-registry-prometheus:1.13.0")

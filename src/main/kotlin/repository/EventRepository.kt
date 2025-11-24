@@ -131,11 +131,14 @@ class EventRepository {
 		)
 		eventsCollection.insertOne(newEvent)
 
-		// Save initial version
+		// Save initial version as base snapshot
 		val version = EventVersion(
 			eventId = newEvent._id!!,
 			version = 1,
-			event = newEvent,
+			versionType = "snapshot",
+			baseSnapshot = newEvent,
+			patches = null,
+			changedFields = null,
 			changedBy = username,
 			changeDescription = "Initial creation"
 		)
@@ -178,11 +181,17 @@ class EventRepository {
 			updatedEvent
 		)
 
-		// Save version history
+		// Generate diff from previous version and save as version history
+		val patches = util.EventDiffer.generateDiff(existingEvent, updatedEvent)
+		val changedFields = util.EventDiffer.extractChangedFields(patches)
+
 		val version = EventVersion(
 			eventId = existingEvent._id!!,
 			version = updatedEvent.version,
-			event = updatedEvent,
+			versionType = "diff",
+			baseSnapshot = null,
+			patches = patches,
+			changedFields = changedFields,
 			changedBy = username
 		)
 		versionsCollection.insertOne(version)
@@ -253,21 +262,83 @@ class EventRepository {
 			.toList()
 	}
 
-	suspend fun revertToVersion(eventId: String, versionNumber: Int, username: String): Event? {
-		val version = versionsCollection.find(
-			Filters.and(
-				Filters.eq("eventId", ObjectId(eventId)),
-				Filters.eq("version", versionNumber)
-			)
-		).toList().firstOrNull() ?: return null
+	/**
+	 * Reconstruct an Event at a specific version by applying all diffs from version 1
+	 * Supports both old snapshot-based versions and new diff-based versions
+	 *
+	 * @param eventId The event ID
+	 * @param versionNumber The target version number to reconstruct
+	 * @return The reconstructed Event, or null if version not found
+	 */
+	suspend fun reconstructVersion(eventId: String, versionNumber: Int): Event? {
+		val objectId = try {
+			ObjectId(eventId)
+		} catch (e: Exception) {
+			return null
+		}
 
+		// Get all versions up to the target version, sorted ascending
+		val versions = versionsCollection.find(
+			Filters.and(
+				Filters.eq("eventId", objectId),
+				Filters.lte("version", versionNumber)
+			)
+		).sort(Sorts.ascending("version"))
+		.toList()
+
+		if (versions.isEmpty()) return null
+
+		// Get version 1 (base snapshot)
+		val baseVersion = versions.firstOrNull { it.version == 1 } ?: return null
+
+		// For backward compatibility: if version has the old 'event' field, use it
+		val baseEvent = baseVersion.baseSnapshot
+			?: baseVersion.event
+			?: return null
+
+		// If requesting version 1, just return the base
+		if (versionNumber == 1) {
+			return baseEvent
+		}
+
+		// Collect all patches from versions 2 to target version
+		val allPatches = versions
+			.filter { it.version > 1 && it.version <= versionNumber }
+			.flatMap { it.patches ?: emptyList() }
+
+		// Reconstruct the event by applying all patches
+		val reconstructed = util.EventReconstructor.reconstruct(baseEvent, allPatches)
+
+		// Recalculate date fields (needed for relative dates that require repository access)
+		val absoluteDate = DateCalculator.calculateAbsoluteDate(reconstructed, this)
+		val calculatedExactDate = DateCalculator.calculateExactDate(reconstructed, this)
+		val displayYear = reconstructed.exactDate?.year ?: calculatedExactDate?.year ?: absoluteDate?.let { (it / 365.0).toInt() }
+
+		return reconstructed.copy(
+			calculatedAbsoluteDate = absoluteDate,
+			calculatedExactDate = calculatedExactDate,
+			displayYear = displayYear
+		)
+	}
+
+	suspend fun revertToVersion(eventId: String, versionNumber: Int, username: String): Event? {
+		// Reconstruct the event at the target version
+		val targetVersionEvent = reconstructVersion(eventId, versionNumber) ?: return null
 		val currentEvent = findById(eventId) ?: return null
 
-		val revertedEvent = version.event.copy(
+		// Recalculate dates for the reverted event
+		val absoluteDate = DateCalculator.calculateAbsoluteDate(targetVersionEvent, this)
+		val calculatedExactDate = DateCalculator.calculateExactDate(targetVersionEvent, this)
+		val displayYear = targetVersionEvent.exactDate?.year ?: calculatedExactDate?.year ?: absoluteDate?.let { (it / 365.0).toInt() }
+
+		val revertedEvent = targetVersionEvent.copy(
 			_id = currentEvent._id,
 			updatedAt = System.currentTimeMillis(),
 			updatedBy = username,
-			version = currentEvent.version + 1
+			version = currentEvent.version + 1,
+			calculatedAbsoluteDate = absoluteDate,
+			calculatedExactDate = calculatedExactDate,
+			displayYear = displayYear
 		)
 
 		eventsCollection.replaceOne(
@@ -275,15 +346,24 @@ class EventRepository {
 			revertedEvent
 		)
 
-		// Save revert as new version
+		// Generate diff from current to reverted state and save as new version
+		val patches = util.EventDiffer.generateDiff(currentEvent, revertedEvent)
+		val changedFields = util.EventDiffer.extractChangedFields(patches)
+
 		val newVersion = EventVersion(
 			eventId = currentEvent._id!!,
 			version = revertedEvent.version,
-			event = revertedEvent,
+			versionType = "diff",
+			baseSnapshot = null,
+			patches = patches,
+			changedFields = changedFields,
 			changedBy = username,
 			changeDescription = "Reverted to version $versionNumber"
 		)
 		versionsCollection.insertOne(newVersion)
+
+		// Recalculate all events that reference this event (cascade update)
+		recalculateDependentEvents(eventId, username)
 
 		return revertedEvent
 	}
