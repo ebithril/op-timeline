@@ -11,6 +11,8 @@ import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.builtins.ListSerializer
 
 fun Route.eventRoutes() {
 	val eventRepository = EventRepository()
@@ -170,9 +172,100 @@ fun Route.eventRoutes() {
 
 			try {
 				val history = eventRepository.getVersionHistory(id)
-				call.respond(HttpStatusCode.OK, history)
+
+				if (history.isEmpty()) {
+					call.respond(HttpStatusCode.OK, emptyList<com.model.EventVersionResponse>())
+					return@get
+				}
+
+				// Convert to response DTOs with readable change summaries
+				val enhancedHistory = history.map { version ->
+					val summary = if (version.version == 1) {
+						"Initial creation"
+					} else {
+						util.PatchFormatter.createSummary(version.changedFields, version.changeDescription)
+					}
+
+					// Create detailed change descriptions from patches
+					val changes = if (version.patches != null && version.patches.isNotEmpty()) {
+						util.PatchFormatter.formatChanges(version.patches)
+					} else {
+						emptyList()
+					}
+
+					// Reconstruct the full event for this version (for frontend compatibility)
+					val reconstructedEvent = if (version.versionType == "snapshot") {
+						// For version 1, use the base snapshot
+						version.baseSnapshot ?: version.event
+					} else {
+						// For diff versions, reconstruct from base + patches
+						eventRepository.reconstructVersion(id, version.version)
+					}
+
+					com.model.EventVersionResponse(
+						id = version._id?.toHexString() ?: "",
+						eventId = version.eventId.toHexString(),
+						version = version.version,
+						versionType = version.versionType,
+						changedBy = version.changedBy,
+						changedAt = version.changedAt,
+						changeDescription = version.changeDescription,
+						changedFields = version.changedFields ?: emptyList(),
+						summary = summary,
+						changes = changes,
+						patches = version.patches ?: emptyList(),
+						event = reconstructedEvent  // Include full event for frontend
+					)
+				}
+
+				call.respond(HttpStatusCode.OK, enhancedHistory)
 			} catch (e: Exception) {
+				e.printStackTrace()
 				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to fetch history: ${e.message}"))
+			}
+		}
+
+		// Get diff between two versions (public)
+		get("/{id}/diff") {
+			val id = call.parameters["id"] ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing event ID"))
+				return@get
+			}
+
+			val fromVersion = call.request.queryParameters["from"]?.toIntOrNull() ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing or invalid 'from' version parameter"))
+				return@get
+			}
+
+			val toVersion = call.request.queryParameters["to"]?.toIntOrNull() ?: run {
+				call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Missing or invalid 'to' version parameter"))
+				return@get
+			}
+
+			try {
+				val fromEvent = eventRepository.reconstructVersion(id, fromVersion)
+				val toEvent = eventRepository.reconstructVersion(id, toVersion)
+
+				if (fromEvent == null || toEvent == null) {
+					call.respond(HttpStatusCode.NotFound, mapOf("error" to "One or both versions not found"))
+					return@get
+				}
+
+				// Generate diff between the two versions
+				val patches = util.EventDiffer.generateDiff(fromEvent, toEvent)
+				val changedFields = util.EventDiffer.extractChangedFields(patches)
+
+				val diffResponse = mapOf(
+					"fromVersion" to fromVersion,
+					"toVersion" to toVersion,
+					"patches" to patches,
+					"changedFields" to changedFields,
+					"summary" to "Changed fields: ${changedFields.joinToString(", ")}"
+				)
+
+				call.respond(HttpStatusCode.OK, diffResponse)
+			} catch (e: Exception) {
+				call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "Failed to generate diff: ${e.message}"))
 			}
 		}
 

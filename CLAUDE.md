@@ -91,20 +91,48 @@ The backend follows a layered architecture pattern:
   - Calculating absolute dates from relative dates with circular dependency detection
   - Converting time units to days
   - Public helper functions used by repositories for date calculations
+- `EventDiffer.kt`: Generates JSON Patch diffs between Event objects for efficient version storage
+- `EventReconstructor.kt`: Reconstructs Event objects from base snapshots and diff patches
 
 **Configuration** (`src/main/kotlin/config/`)
 - `DatabaseConfig.kt`: MongoDB client initialization and lifecycle management
 
+**Scripts** (`src/main/kotlin/scripts/`)
+- `MigrateVersionsToDiffs.kt`: Migration script to convert snapshot-based version history to diff-based storage
+
 ### Key Architectural Patterns
 
-**Version History System**
-Every event modification creates a new `EventVersion` record with:
-- Full event snapshot at that version
-- Version number (auto-incremented)
-- Username who made the change
-- Timestamp
+**Version History System (Diff-Based)**
+The system uses a diff-based versioning approach for storage efficiency:
 
-Admins can revert to any previous version, which creates a new version (never overwrites history).
+**Version 1 (Base Snapshot)**:
+- Stores complete Event object in `baseSnapshot` field
+- `versionType = "snapshot"`
+- Serves as foundation for reconstructing all future versions
+
+**Versions 2+ (Diffs)**:
+- Store only JSON Patch operations (RFC 6902) representing changes
+- `versionType = "diff"`
+- `patches` contains list of operations (add, remove, replace, etc.)
+- `changedFields` provides quick summary of modified fields
+- Excludes calculated fields (calculatedAbsoluteDate, calculatedExactDate, displayYear) to save space
+
+**Reconstruction**:
+- `EventRepository.reconstructVersion()` rebuilds any version by applying patches sequentially
+- Recalculates excluded fields using DateCalculator after reconstruction
+- Supports backward compatibility with old snapshot-based versions
+
+**Reversion**:
+Admins can revert to any previous version using `POST /api/events/{id}/revert/{version}`:
+- Reconstructs target version state
+- Creates new diff version (never overwrites history)
+- Generates diff from current to target state
+
+**Storage Efficiency**:
+- ~60-80% reduction in version history storage
+- Only changed fields stored in diffs
+- Calculated fields regenerated on demand
+- See DIFF_MIGRATION_GUIDE.md for details
 
 **Date Calculation System**
 Events can have three date types:

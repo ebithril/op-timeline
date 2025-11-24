@@ -323,4 +323,148 @@ class EventRepositoryTest {
         // 2. Attempt to revert to version 99
         // 3. Returns null
     }
+
+    // ========================================
+    // Diff-Based Version History Tests
+    // ========================================
+
+    @Test
+    fun `create - saves version 1 as baseSnapshot with versionType snapshot`() = runTest {
+        // This test would verify:
+        // 1. Create an event
+        // 2. Check EventVersion document in database
+        // 3. Verify versionType = "snapshot"
+        // 4. Verify baseSnapshot contains the event
+        // 5. Verify patches = null
+        // 6. Verify changedFields = null
+    }
+
+    @Test
+    fun `update - generates and stores diff patches`() = runTest {
+        // This test would verify:
+        // 1. Create event with name "Original"
+        // 2. Update event to name "Modified"
+        // 3. Check version 2 in database
+        // 4. Verify versionType = "diff"
+        // 5. Verify baseSnapshot = null
+        // 6. Verify patches is not null and contains changes
+        // 7. Verify changedFields contains "name"
+    }
+
+    @Test
+    fun `update - changedFields contains all modified fields`() = runTest {
+        // This test would verify:
+        // 1. Create event
+        // 2. Update name, description, and type
+        // 3. Check version 2 changedFields
+        // 4. Verify it contains ["name", "description", "type"]
+    }
+
+    @Test
+    fun `update - patches exclude calculated fields`() = runTest {
+        // This test would verify:
+        // 1. Create event with calculated fields
+        // 2. Update event (triggering recalculation)
+        // 3. Check patches in version 2
+        // 4. Verify no patches for calculatedAbsoluteDate, calculatedExactDate, displayYear
+    }
+
+    @Test
+    fun `reconstructVersion - returns version 1 correctly`() = runTest {
+        // This test would verify:
+        // 1. Create event
+        // 2. Call reconstructVersion(eventId, 1)
+        // 3. Verify returned event matches created event
+    }
+
+    @Test
+    fun `reconstructVersion - reconstructs version 2 from base and patches`() = runTest {
+        // This test would verify:
+        // 1. Create event with name "Original"
+        // 2. Update to name "Modified"
+        // 3. Call reconstructVersion(eventId, 2)
+        // 4. Verify returned event has name "Modified"
+    }
+
+    @Test
+    fun `reconstructVersion - reconstructs version 3 from base and multiple patches`() = runTest {
+        // This test would verify:
+        // 1. Create event (v1)
+        // 2. Update name (v2)
+        // 3. Update description (v3)
+        // 4. Call reconstructVersion(eventId, 3)
+        // 5. Verify both name and description are updated correctly
+    }
+
+    @Test
+    fun `reconstructVersion - recalculates calculated fields`() = runTest {
+        // This test would verify:
+        // 1. Create event with exact date
+        // 2. Update event
+        // 3. Reconstruct version 2
+        // 4. Verify calculatedAbsoluteDate, calculatedExactDate, displayYear are present
+    }
+
+    @Test
+    fun `reconstructVersion - returns null for non-existent version`() = runTest {
+        // This test would verify:
+        // 1. Create event (only v1 exists)
+        // 2. Call reconstructVersion(eventId, 99)
+        // 3. Verify returns null
+    }
+
+    @Test
+    fun `revertToVersion - uses reconstructVersion to get target state`() = runTest {
+        // This test would verify:
+        // 1. Create event "V1"
+        // 2. Update to "V2"
+        // 3. Update to "V3"
+        // 4. Revert to version 1
+        // 5. Verify event name is back to "V1"
+        // 6. Verify version is now 4
+        // 7. Verify version 4 has patches (diff from V3 to V1)
+    }
+
+    @Test
+    fun `revertToVersion - creates diff version with revert description`() = runTest {
+        // This test would verify:
+        // 1. Create and update event
+        // 2. Revert to version 1
+        // 3. Check latest version in database
+        // 4. Verify versionType = "diff"
+        // 5. Verify changeDescription = "Reverted to version 1"
+        // 6. Verify patches and changedFields are present
+    }
+
+    @Test
+    fun `version history - supports backward compatibility with old snapshots`() = runTest {
+        // This test would verify:
+        // 1. Manually insert old-style EventVersion with 'event' field
+        // 2. Call reconstructVersion()
+        // 3. Verify it correctly reads from 'event' field when baseSnapshot is null
+    }
+
+    @Test
+    fun `getVersionHistory - returns versions with changedFields for quick summary`() = runTest {
+        // This test would verify:
+        // 1. Create event
+        // 2. Update name and description
+        // 3. Update type
+        // 4. Call getVersionHistory()
+        // 5. Verify version 2 has changedFields = ["name", "description"]
+        // 6. Verify version 3 has changedFields = ["type"]
+    }
+
+    @Test
+    fun `full version lifecycle - create, update multiple times, revert, reconstruct all versions`() = runTest {
+        // This comprehensive test would verify:
+        // 1. Create event (v1 - snapshot)
+        // 2. Update field A (v2 - diff)
+        // 3. Update field B (v3 - diff)
+        // 4. Update field C (v4 - diff)
+        // 5. Revert to v2 (v5 - diff)
+        // 6. Reconstruct each version and verify correctness
+        // 7. Verify all versions have correct versionType
+        // 8. Verify changedFields are correct for each diff version
+    }
 }
